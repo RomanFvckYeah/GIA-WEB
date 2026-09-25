@@ -46,6 +46,15 @@ const headerLabels = [
         },
     },
     {
+        label: defineMessage({
+            id: 'admin.systemUserDetail.teamList.header.organization',
+            defaultMessage: 'Organization',
+        }),
+        style: {
+            width: '110px',
+        },
+    },
+    {
         style: {
             width: '150px',
         },
@@ -61,6 +70,9 @@ type Props = {
         getTeamMembersForUser: (userId: string) => Promise<ActionResult<TeamMembership[]>>;
         removeUserFromTeam: (teamId: string, userId: string) => Promise<ActionResult>;
         updateTeamMemberSchemeRoles: (teamId: string, userId: string, isSchemeUser: boolean, isSchemeAdmin: boolean) => Promise<ActionResult>;
+        getTeamOrganizationMembers: (teamId: string) => Promise<ActionResult<string[]>>;
+        addTeamOrganizationMember: (teamId: string, userId: string) => Promise<ActionResult>;
+        removeTeamOrganizationMember: (teamId: string, userId: string) => Promise<ActionResult>;
     };
     userDetailCallback: (teamsId: TeamMembership[]) => void;
     refreshTeams: boolean;
@@ -69,6 +81,7 @@ type Props = {
 
 type State = {
     teamsWithMemberships: TeamWithMembership[];
+    orgMemberTeamIds: Set<string>;
     serverError: string | null;
 }
 
@@ -85,6 +98,7 @@ export default class TeamList extends React.PureComponent<Props, State> {
         super(props);
         this.state = {
             teamsWithMemberships: [],
+            orgMemberTeamIds: new Set(),
             serverError: null,
         };
     }
@@ -102,12 +116,20 @@ export default class TeamList extends React.PureComponent<Props, State> {
     private getTeamsAndMemberships = async (userId = this.props.userId): Promise<void> => {
         const teams = await this.props.actions.getTeamsData(userId);
         const memberships = await this.props.actions.getTeamMembersForUser(userId);
-        return Promise.all([teams, memberships]).
-            then(this.mergeTeamsWithMemberships).
-            then((teamsWithMemberships) => {
-                this.setState({teamsWithMemberships});
-                this.props.userDetailCallback(teamsWithMemberships);
-            });
+        const teamsWithMemberships = await Promise.all([teams, memberships]).then(this.mergeTeamsWithMemberships);
+
+        // Fetched per-team (rather than a single call) since organization membership is
+        // scoped to a specific (team, user) pair, not a global user attribute.
+        const orgMemberTeamIds = new Set<string>();
+        await Promise.all(teamsWithMemberships.map(async (team) => {
+            const result = await this.props.actions.getTeamOrganizationMembers(team.id);
+            if (result.data?.includes(userId)) {
+                orgMemberTeamIds.add(team.id);
+            }
+        }));
+
+        this.setState({teamsWithMemberships, orgMemberTeamIds});
+        this.props.userDetailCallback(teamsWithMemberships);
     };
 
     // check this out
@@ -153,6 +175,16 @@ export default class TeamList extends React.PureComponent<Props, State> {
         }
     };
 
+    private doToggleOrgMember = async (teamId: string, isMember: boolean): Promise<void> => {
+        const action = isMember ? this.props.actions.addTeamOrganizationMember : this.props.actions.removeTeamOrganizationMember;
+        const {error} = await action(teamId, this.props.userId);
+        if (error) {
+            this.setState({serverError: error.message});
+        } else {
+            this.getTeamsAndMemberships();
+        }
+    };
+
     private renderRow = (item: TeamWithMembership): JSX.Element => {
         return (
             <TeamRow
@@ -161,6 +193,8 @@ export default class TeamList extends React.PureComponent<Props, State> {
                 doRemoveUserFromTeam={this.doRemoveUserFromTeam}
                 doMakeUserTeamAdmin={this.doMakeUserTeamAdmin}
                 doMakeUserTeamMember={this.doMakeUserTeamMember}
+                isOrgMember={this.state.orgMemberTeamIds.has(item.id)}
+                doToggleOrgMember={this.doToggleOrgMember}
                 readOnly={this.props.readOnly}
             />
         );

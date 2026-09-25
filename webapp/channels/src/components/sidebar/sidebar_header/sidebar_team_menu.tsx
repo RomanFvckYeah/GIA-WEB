@@ -7,7 +7,6 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useHistory} from 'react-router-dom';
 
 import {
-    LightbulbOutlineIcon,
     AccountPlusOutlineIcon,
     AccountMultiplePlusOutlineIcon,
     SettingsOutlineIcon,
@@ -114,8 +113,6 @@ export default function SidebarTeamMenu(props: Props) {
                     isCloud={isCloud}
                 />
             )}
-            <Menu.Separator/>
-            <LearnAboutTeamsMenuItem/>
             <PluginMenuItems/>
         </Menu.Container>
     );
@@ -454,33 +451,6 @@ function RestrictedIndicatorForCreateTeam({isFreeTrial}: {isFreeTrial: boolean})
                 id: 'navbar_dropdown.create.modal.messageEndUser',
                 defaultMessage: 'Multiple teams allow for context-specific spaces that are more attuned to your teams’ needs.',
             })}
-        />
-    );
-}
-
-const MATTERMOST_ACADEMY_TEAM_TRAINING_LINK = 'https://mattermost.com/pl/mattermost-academy-team-training';
-
-function LearnAboutTeamsMenuItem() {
-    const handleClick = useCallback(() => {
-        window.open(MATTERMOST_ACADEMY_TEAM_TRAINING_LINK, '_blank', 'noopener noreferrer');
-    }, []);
-
-    return (
-        <Menu.Item
-            className='learnAboutTeamsMenuItem'
-            onClick={handleClick}
-            leadingElement={(
-                <LightbulbOutlineIcon
-                    size={18}
-                    aria-hidden='true'
-                />
-            )}
-            labels={(
-                <FormattedMessage
-                    id='sidebarLeft.teamMenu.learnAboutTeamsMenuItem.primaryLabel'
-                    defaultMessage='Learn about teams'
-                />
-            )}
         />
     );
 }

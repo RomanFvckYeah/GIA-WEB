@@ -22,6 +22,7 @@ import {makeAsyncComponent, makeAsyncPluggableComponent} from 'components/async_
 import ChannelController from 'components/channel_layout/channel_controller';
 import useTelemetryIdentitySync from 'components/common/hooks/useTelemetryIdentifySync';
 import InitialLoadingScreen from 'components/initial_loading_screen';
+import TeamStatistics from 'components/team_statistics';
 
 import Constants from 'utils/constants';
 import DesktopApp from 'utils/desktop_api';
@@ -236,6 +237,10 @@ function TeamController(props: Props) {
             <Route
                 path={`/:team(${TEAM_NAME_PATH_PATTERN})/emoji`}
                 component={BackstageController}
+            />
+            <Route
+                path={`/:team(${TEAM_NAME_PATH_PATTERN})/statistics`}
+                component={TeamStatistics}
             />
             {props.plugins?.map((plugin) => (
                 <Route

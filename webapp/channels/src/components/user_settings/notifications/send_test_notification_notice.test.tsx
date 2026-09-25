@@ -34,18 +34,6 @@ describe('components/user_settings/notifications/send_test_notification_notice',
             expect(screen.getByText('Test notification sent')).toBeInTheDocument();
         });
     });
-    it('should open link when the secondary button is clicked', () => {
-        const originalOpen = window.open;
-        const mockedOpen = jest.fn();
-        window.open = mockedOpen;
-
-        renderWithContext((<SendTestNotificationNotice/>));
-        expect(mockedOpen).not.toHaveBeenCalled();
-        act(() => screen.getByText('Troubleshooting docs').click());
-        expect(mockedOpen).toHaveBeenCalled();
-
-        window.open = originalOpen;
-    });
     it('should show error on button when the system returns an error', async () => {
         mockedSendTestNotification.mockResolvedValueOnce({status: 'NOT OK'});
 

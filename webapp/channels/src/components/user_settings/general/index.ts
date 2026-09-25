@@ -14,11 +14,9 @@ import {
     saveCustomProfileAttribute,
     getCustomProfileAttributeValues,
 } from 'mattermost-redux/actions/users';
-import {getConfig, getCustomProfileAttributes, getFeatureFlagValue, getLicense} from 'mattermost-redux/selectors/entities/general';
+import {getConfig, getCustomProfileAttributes, getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
 
 import {getIsMobileView} from 'selectors/views/browser';
-
-import {isEnterpriseLicense} from 'utils/license_utils';
 
 import type {GlobalState} from 'types/store';
 
@@ -40,9 +38,9 @@ function mapStateToProps(state: GlobalState) {
     const ldapPositionAttributeSet = config.LdapPositionAttributeSet === 'true';
     const ldapPictureAttributeSet = config.LdapPictureAttributeSet === 'true';
 
-    const license = getLicense(state);
-    const isEnterprise = isEnterpriseLicense(license);
-    const enableCustomProfileAttributes = isEnterprise && getFeatureFlagValue(state, 'CustomProfileAttributes') === 'true';
+    // Deliberately not gated on license tier, unlike upstream: User Attributes is not an
+    // Enterprise-licensed feature in this fork.
+    const enableCustomProfileAttributes = getFeatureFlagValue(state, 'CustomProfileAttributes') === 'true';
 
     return {
         isMobileView: getIsMobileView(state),

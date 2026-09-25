@@ -144,6 +144,24 @@ func (_m *ServiceInterface) NewEmailTemplateData(locale string) templates.Data {
 	return r0
 }
 
+// SendAccountCredentialsEmail provides a mock function with given fields: _a0, loginId, password, locale, siteURL
+func (_m *ServiceInterface) SendAccountCredentialsEmail(_a0 string, loginId string, password string, locale string, siteURL string) error {
+	ret := _m.Called(_a0, loginId, password, locale, siteURL)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SendAccountCredentialsEmail")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, string, string, string) error); ok {
+		r0 = rf(_a0, loginId, password, locale, siteURL)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SendChangeUsernameEmail provides a mock function with given fields: newUsername, _a1, locale, siteURL
 func (_m *ServiceInterface) SendChangeUsernameEmail(newUsername string, _a1 string, locale string, siteURL string) error {
 	ret := _m.Called(newUsername, _a1, locale, siteURL)

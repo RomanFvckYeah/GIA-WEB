@@ -69,6 +69,7 @@ import CustomDataRetentionForm from './data_retention_settings/custom_policy_for
 import {searchableStrings as dataRetentionSearchableStrings} from './data_retention_settings/data_retention_settings';
 import GlobalDataRetentionForm from './data_retention_settings/global_policy_form';
 import DatabaseSettings, {searchableStrings as databaseSearchableStrings} from './database_settings';
+import DirectMessageExceptionsPage from './direct_message_exceptions';
 import ElasticSearchSettings, {searchableStrings as elasticSearchSearchableStrings} from './elasticsearch_settings';
 import {
     AnnouncementBannerFeatureDiscovery,
@@ -128,6 +129,7 @@ import TeamSettings from './team_channel_settings/team';
 import TeamDetails from './team_channel_settings/team/details';
 import type {AdminDefinition as AdminDefinitionType} from './types';
 import ValidationResult from './validation';
+import WelcomeFaqSetting from './welcome_faq_setting';
 import WorkspaceOptimizationDashboard from './workspace-optimization/dashboard';
 
 // Re-export for backward compatibility
@@ -409,6 +411,16 @@ const AdminDefinition: AdminDefinitionType = {
                     component: SystemUsers,
                 },
             },
+            direct_message_exceptions: {
+                url: 'user_management/direct_message_exceptions',
+                title: defineMessage({id: 'admin.sidebar.directMessageExceptions', defaultMessage: 'Direct Message Exceptions'}),
+                isHidden: it.not(it.userHasReadPermissionOnResource(RESOURCE_KEYS.USER_MANAGEMENT.USERS)),
+                isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.USER_MANAGEMENT.USERS)),
+                schema: {
+                    id: 'DirectMessageExceptions',
+                    component: DirectMessageExceptionsPage,
+                },
+            },
             system_user_detail: {
                 url: `user_management/user/:user_id(${ID_PATH_PATTERN})`,
                 isHidden: it.not(it.userHasReadPermissionOnResource(RESOURCE_KEYS.USER_MANAGEMENT.USERS)),
@@ -605,10 +617,10 @@ const AdminDefinition: AdminDefinitionType = {
                 url: 'system_attributes/user_attributes',
                 title: defineMessage({id: 'admin.sidebar.user_attributes', defaultMessage: 'User Attributes'}),
                 searchableStrings: systemPropertiesSearchableStrings,
-                isHidden: it.not(it.all(
-                    it.minLicenseTier(LicenseSkus.Enterprise),
-                    it.configIsTrue('FeatureFlags', 'CustomProfileAttributes'),
-                )),
+
+                // Deliberately not gated on license tier, unlike upstream: User Attributes is
+                // not an Enterprise-licensed feature in this fork.
+                isHidden: it.not(it.configIsTrue('FeatureFlags', 'CustomProfileAttributes')),
                 schema: {
                     id: 'SystemProperties',
                     component: SystemProperties,
@@ -618,10 +630,10 @@ const AdminDefinition: AdminDefinitionType = {
                 url: 'system_attributes/user_attributes',
                 isDiscovery: true,
                 title: defineMessage({id: 'admin.sidebar.user_attributes', defaultMessage: 'User Attributes'}),
-                isHidden: it.any(
-                    it.minLicenseTier(LicenseSkus.Enterprise),
-                    it.configIsFalse('FeatureFlags', 'CustomProfileAttributes'),
-                ),
+
+                // The real page above is never license-gated in this fork, so this upsell
+                // never has a reason to show.
+                isHidden: true,
                 schema: {
                     id: 'SystemProperties',
                     name: defineMessage({id: 'admin.sidebar.user_attributes', defaultMessage: 'User Attributes'}),
@@ -2446,6 +2458,42 @@ const AdminDefinition: AdminDefinitionType = {
                             isDisabled: it.any(
                                 it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
                                 it.stateIsFalse('TeamSettings.EnableCustomBrand'),
+                            ),
+                        },
+                        {
+                            type: 'bool',
+                            key: 'TeamSettings.EnableWelcomeMessageDM',
+                            label: defineMessage({id: 'admin.customization.welcomeDm.enableTitle', defaultMessage: 'Enable Welcome Message DM:'}),
+                            help_text: defineMessage({id: 'admin.customization.welcomeDm.enableDesc', defaultMessage: 'When true, the System Bot sends a direct message with the text below to every newly created account.'}),
+                            isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                        },
+                        {
+                            type: 'longtext',
+                            key: 'TeamSettings.WelcomeMessageDMText',
+                            label: defineMessage({id: 'admin.customization.welcomeDm.textTitle', defaultMessage: 'Welcome Message Text:'}),
+                            help_text: defineMessage({id: 'admin.customization.welcomeDm.textDesc', defaultMessage: 'Message the System Bot sends to new users as a direct message. Supports Markdown-formatted text.'}),
+                            isDisabled: it.any(
+                                it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                                it.stateIsFalse('TeamSettings.EnableWelcomeMessageDM'),
+                            ),
+                        },
+                        {
+                            type: 'text',
+                            key: 'TeamSettings.WelcomeFaqPrompt',
+                            label: defineMessage({id: 'admin.customization.welcomeFaq.promptTitle', defaultMessage: 'Welcome Menu Prompt:'}),
+                            help_text: defineMessage({id: 'admin.customization.welcomeFaq.promptDesc', defaultMessage: 'Recurring question the System Bot shows above the menu options (e.g. "What would you like to know?"). Leave blank for a default.'}),
+                            isDisabled: it.any(
+                                it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                                it.stateIsFalse('TeamSettings.EnableWelcomeMessageDM'),
+                            ),
+                        },
+                        {
+                            type: 'custom',
+                            component: WelcomeFaqSetting,
+                            key: 'TeamSettings.WelcomeFaqItems',
+                            isDisabled: it.any(
+                                it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                                it.stateIsFalse('TeamSettings.EnableWelcomeMessageDM'),
                             ),
                         },
                         {

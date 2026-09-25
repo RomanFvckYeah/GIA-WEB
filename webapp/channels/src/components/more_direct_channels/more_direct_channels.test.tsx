@@ -83,6 +83,9 @@ describe('components/MoreDirectChannels', () => {
                 });
             }),
             canUserDirectMessage: jest.fn().mockResolvedValue({data: {can_dm: true}}),
+            getProfilesByIds: jest.fn().mockResolvedValue({data: []}),
+            getMyDirectMessageExceptionPartners: jest.fn().mockResolvedValue({data: []}),
+            getGloballyDiscoverableUsers: jest.fn().mockResolvedValue({data: []}),
         },
     };
 

@@ -340,7 +340,8 @@ func (a *App) GetOrCreateDirectChannel(rctx request.CTX, userID, otherUserID str
 	}
 
 	if *a.Config().TeamSettings.RestrictDirectMessage == model.DirectMessageTeam &&
-		!a.SessionHasPermissionTo(*rctx.Session(), model.PermissionManageSystem) {
+		!a.SessionHasPermissionTo(*rctx.Session(), model.PermissionManageSystem) &&
+		!a.CanBypassDirectMessageTeamRestriction(rctx, userID, otherUserID) {
 		users, err := a.GetUsersByIds(rctx, []string{userID, otherUserID}, &store.UserGetByIdsOpts{})
 		if err != nil {
 			return nil, err
@@ -4130,6 +4131,13 @@ func (a *App) CheckIfChannelIsRestrictedDM(rctx request.CTX, channel *model.Chan
 
 	if channel.Type != model.ChannelTypeDirect && channel.Type != model.ChannelTypeGroup {
 		return false, nil
+	}
+
+	if channel.Type == model.ChannelTypeDirect {
+		userID1, userID2 := channel.GetBothUsersForDM()
+		if userID1 != "" && userID2 != "" && a.CanBypassDirectMessageTeamRestriction(rctx, userID1, userID2) {
+			return false, nil
+		}
 	}
 
 	teams, err := a.GetDirectOrGroupMessageMembersCommonTeams(rctx, channel.Id)

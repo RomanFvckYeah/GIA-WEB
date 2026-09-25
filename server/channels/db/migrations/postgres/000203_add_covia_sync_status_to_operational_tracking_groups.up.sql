@@ -1,0 +1,2 @@
+ALTER TABLE OperationalTrackingGroups ADD COLUMN IF NOT EXISTS CoviaSyncStatus VARCHAR(16) NOT NULL DEFAULT 'pending';
+ALTER TABLE OperationalTrackingGroups ADD COLUMN IF NOT EXISTS CoviaSyncedAt BIGINT NOT NULL DEFAULT 0;

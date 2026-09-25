@@ -138,6 +138,7 @@ type ServiceInterface interface {
 	SendVerifyEmail(userEmail, locale, siteURL, token, redirect string) error
 	SendSignInChangeEmail(email, method, locale, siteURL string) error
 	SendWelcomeEmail(userID string, email string, verified bool, disableWelcomeEmail bool, locale, siteURL, redirect string) error
+	SendAccountCredentialsEmail(email, loginId, password, locale, siteURL string) error
 	SendCloudWelcomeEmail(userEmail, locale, teamInviteID, workSpaceName, dns, siteURL string) error
 	SendPasswordChangeEmail(email, method, locale, siteURL string) error
 	SendUserAccessTokenAddedEmail(email, locale, siteURL string) error

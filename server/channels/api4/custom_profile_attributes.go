@@ -4,6 +4,9 @@
 // This file implements the "User Attributes" API handlers (formerly "Custom
 // Profile Attributes" / CPA). Internal identifiers and URL paths retain the
 // old naming for backward compatibility. See MM-68235.
+//
+// Deliberately has no Enterprise license checks, unlike upstream: User Attributes
+// is not an Enterprise-licensed feature in this fork.
 
 package api4
 
@@ -31,11 +34,6 @@ func (api *API) InitCustomProfileAttributes() {
 }
 
 func listCPAFields(c *Context, w http.ResponseWriter, r *http.Request) {
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.listCPAFields", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	rctx := app.RequestContextWithCallerID(c.AppContext, c.AppContext.Session().UserId)
 	fields, appErr := c.App.ListCPAFields(rctx)
 	if appErr != nil {
@@ -51,11 +49,6 @@ func listCPAFields(c *Context, w http.ResponseWriter, r *http.Request) {
 func createCPAField(c *Context, w http.ResponseWriter, r *http.Request) {
 	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
 		c.SetPermissionError(model.PermissionManageSystem)
-		return
-	}
-
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.createCPAField", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
 		return
 	}
 
@@ -92,11 +85,6 @@ func createCPAField(c *Context, w http.ResponseWriter, r *http.Request) {
 func patchCPAField(c *Context, w http.ResponseWriter, r *http.Request) {
 	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
 		c.SetPermissionError(model.PermissionManageSystem)
-		return
-	}
-
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.patchCPAField", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
 		return
 	}
 
@@ -158,11 +146,6 @@ func deleteCPAField(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.deleteCPAField", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	c.RequireFieldId()
 	if c.Err != nil {
 		return
@@ -193,11 +176,6 @@ func deleteCPAField(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func getCPAGroup(c *Context, w http.ResponseWriter, r *http.Request) {
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.getCPAGroup", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	groupID, appErr := c.App.CpaGroupID()
 	if appErr != nil {
 		c.Err = appErr
@@ -210,11 +188,6 @@ func getCPAGroup(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func patchCPAValues(c *Context, w http.ResponseWriter, r *http.Request) {
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.patchCPAValues", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	userID := c.AppContext.Session().UserId
 	if !c.App.SessionHasPermissionToUser(*c.AppContext.Session(), userID) {
 		c.SetPermissionError(model.PermissionEditOtherUsers)
@@ -273,11 +246,6 @@ func patchCPAValues(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func listCPAValues(c *Context, w http.ResponseWriter, r *http.Request) {
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.listCPAValues", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	c.RequireUserId()
 	if c.Err != nil {
 		return
@@ -312,11 +280,6 @@ func listCPAValues(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func patchCPAValuesForUser(c *Context, w http.ResponseWriter, r *http.Request) {
-	if !model.MinimumEnterpriseLicense(c.App.Channels().License()) {
-		c.Err = model.NewAppError("Api4.patchCPAValuesForUser", "api.custom_profile_attributes.license_error", nil, "", http.StatusForbidden)
-		return
-	}
-
 	// Get userID from URL
 	c.RequireUserId()
 	if c.Err != nil {
@@ -324,7 +287,8 @@ func patchCPAValuesForUser(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 	userID := c.Params.UserId
 
-	if !c.App.SessionHasPermissionToUser(*c.AppContext.Session(), userID) {
+	if !c.App.SessionHasPermissionToUser(*c.AppContext.Session(), userID) &&
+		!c.App.SessionHasPermissionToUserViaTeamAdmin(c.AppContext, *c.AppContext.Session(), userID) {
 		c.SetPermissionError(model.PermissionEditOtherUsers)
 		return
 	}

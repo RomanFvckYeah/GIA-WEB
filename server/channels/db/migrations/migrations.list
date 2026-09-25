@@ -335,3 +335,15 @@ channels/db/migrations/postgres/000171_drop_property_fields_protected_index.down
 channels/db/migrations/postgres/000171_drop_property_fields_protected_index.up.sql
 channels/db/migrations/postgres/000195_threadmemberships_cleanup_v2.down.sql
 channels/db/migrations/postgres/000195_threadmemberships_cleanup_v2.up.sql
+channels/db/migrations/postgres/000196_create_team_organization_members.down.sql
+channels/db/migrations/postgres/000196_create_team_organization_members.up.sql
+channels/db/migrations/postgres/000197_add_organization_member_limit_to_teams.down.sql
+channels/db/migrations/postgres/000197_add_organization_member_limit_to_teams.up.sql
+channels/db/migrations/postgres/000198_add_read_only_to_channels.down.sql
+channels/db/migrations/postgres/000198_add_read_only_to_channels.up.sql
+channels/db/migrations/postgres/000199_create_direct_message_exceptions.down.sql
+channels/db/migrations/postgres/000199_create_direct_message_exceptions.up.sql
+channels/db/migrations/postgres/000200_create_globally_discoverable_users.down.sql
+channels/db/migrations/postgres/000200_create_globally_discoverable_users.up.sql
+channels/db/migrations/postgres/000201_create_panic_button_only_users.down.sql
+channels/db/migrations/postgres/000201_create_panic_button_only_users.up.sql

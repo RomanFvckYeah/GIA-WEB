@@ -3055,3 +3055,72 @@ func TestConsumeTokenOnce(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, appErr.StatusCode)
 	})
 }
+
+func TestUserCanSeeOtherUserWithCrossTeamExceptions(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t).InitBasic(t)
+
+	team1 := th.CreateTeam(t)
+	team2 := th.CreateTeam(t)
+	team3 := th.CreateTeam(t)
+
+	user1 := th.CreateUser(t)
+	th.LinkUserToTeam(t, user1, team1)
+
+	user2 := th.CreateUser(t)
+	th.LinkUserToTeam(t, user2, team2)
+
+	user3 := th.CreateUser(t)
+	th.LinkUserToTeam(t, user3, team3)
+
+	// Revoke system-scoped view_members so visibility becomes team-scoped, matching an admin
+	// who has locked down cross-team visibility via the Permissions Scheme editor.
+	th.RemovePermissionFromRole(t, model.PermissionViewMembers.Id, model.SystemUserRoleId)
+	t.Cleanup(func() {
+		th.AddPermissionToRole(t, model.PermissionViewMembers.Id, model.SystemUserRoleId)
+	})
+
+	t.Run("users on different teams cannot see each other by default once view_members is team-scoped", func(t *testing.T) {
+		canSee, appErr := th.App.UserCanSeeOtherUser(th.Context, user1.Id, user2.Id)
+		require.Nil(t, appErr)
+		assert.False(t, canSee)
+	})
+
+	t.Run("a direct message exception makes the pair mutually visible", func(t *testing.T) {
+		appErr := th.App.AddDirectMessageException(th.Context, user1.Id, user2.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		t.Cleanup(func() {
+			th.App.RemoveDirectMessageException(th.Context, user1.Id, user2.Id)
+		})
+
+		canSee, appErr := th.App.UserCanSeeOtherUser(th.Context, user1.Id, user2.Id)
+		require.Nil(t, appErr)
+		assert.True(t, canSee)
+
+		// order-independent
+		canSeeReverse, appErr := th.App.UserCanSeeOtherUser(th.Context, user2.Id, user1.Id)
+		require.Nil(t, appErr)
+		assert.True(t, canSeeReverse)
+
+		// does not leak visibility to an unrelated third user
+		canSeeThird, appErr := th.App.UserCanSeeOtherUser(th.Context, user1.Id, user3.Id)
+		require.Nil(t, appErr)
+		assert.False(t, canSeeThird)
+	})
+
+	t.Run("a globally discoverable user is visible to everyone but does not grant reverse visibility", func(t *testing.T) {
+		appErr := th.App.AddGloballyDiscoverableUser(th.Context, user3.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		t.Cleanup(func() {
+			th.App.RemoveGloballyDiscoverableUser(th.Context, user3.Id)
+		})
+
+		canSee, appErr := th.App.UserCanSeeOtherUser(th.Context, user1.Id, user3.Id)
+		require.Nil(t, appErr)
+		assert.True(t, canSee, "user3 should be discoverable by user1")
+
+		canSeeReverse, appErr := th.App.UserCanSeeOtherUser(th.Context, user3.Id, user1.Id)
+		require.Nil(t, appErr)
+		assert.False(t, canSeeReverse, "being discoverable does not make user1 visible to user3")
+	})
+}

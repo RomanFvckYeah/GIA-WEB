@@ -1133,6 +1133,28 @@ func TestJoinUserToTeam(t *testing.T) {
 		require.Nil(t, appErr)
 		require.True(t, tm2.SchemeAdmin)
 	})
+
+	t.Run("panic button only user cannot join any team", func(t *testing.T) {
+		user := model.User{Email: strings.ToLower(model.NewId()) + "success+test@example.com", Nickname: "Darth Vader", Username: "vader" + model.NewId(), Password: model.NewTestPassword(), AuthService: ""}
+		ruser, createErr := th.App.CreateUser(th.Context, &user)
+		require.Nil(t, createErr)
+		require.NotNil(t, ruser)
+		defer func() {
+			appErr := th.App.PermanentDeleteUser(th.Context, &user)
+			require.Nil(t, appErr)
+		}()
+
+		appErr := th.App.AddPanicButtonOnlyUser(th.Context, ruser.Id, ruser.Id)
+		require.Nil(t, appErr)
+		defer func() {
+			appErr := th.App.RemovePanicButtonOnlyUser(th.Context, ruser.Id)
+			require.Nil(t, appErr)
+		}()
+
+		tm, appErr := th.App.JoinUserToTeam(th.Context, team, ruser, "")
+		require.NotNil(t, appErr, "Should fail")
+		require.Nil(t, tm)
+	})
 }
 
 func TestLeaveTeamPanic(t *testing.T) {

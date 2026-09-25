@@ -129,6 +129,12 @@ export function getFirstAdminSetupComplete(state: GlobalState): boolean {
     return state.entities.general.firstAdminCompleteSetup;
 }
 
+// Whether the CURRENT user is restricted to the mobile panic-button flow only — populated by
+// fetchIsCurrentUserPanicButtonOnly (mattermost-redux/actions/panic_button_only_users.ts).
+export function isCurrentUserPanicButtonOnly(state: GlobalState): boolean {
+    return state.entities.general.panicButtonOnly;
+}
+
 export function isPerformanceDebuggingEnabled(state: GlobalState): boolean {
     return state.entities.general.config.EnableClientPerformanceDebugging === 'true';
 }

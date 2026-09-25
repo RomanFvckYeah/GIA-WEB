@@ -26,13 +26,12 @@ func TestCreateCPAField(t *testing.T) {
 		field := &model.PropertyField{Name: model.NewId(), Type: model.PropertyFieldTypeText}
 
 		createdField, resp, err := client.CreateCPAField(context.Background(), field)
-		CheckForbiddenStatus(t, resp)
-		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-		require.Empty(t, createdField)
-	}, "endpoint should not work if no valid license is present")
+		CheckCreatedStatus(t, resp)
+		require.NoError(t, err)
+		require.NotZero(t, createdField.ID)
+	}, "endpoint should work even with no valid license present (not an Enterprise-licensed feature in this fork)")
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("a user without admin permissions should not be able to create a field", func(t *testing.T) {
@@ -131,15 +130,14 @@ func TestListCPAFields(t *testing.T) {
 	require.Nil(t, appErr)
 	require.NotNil(t, createdField)
 
-	t.Run("endpoint should not work if no valid license is present", func(t *testing.T) {
+	t.Run("endpoint should work even with no valid license present (not an Enterprise-licensed feature in this fork)", func(t *testing.T) {
 		fields, resp, err := th.Client.ListCPAFields(context.Background())
-		CheckForbiddenStatus(t, resp)
-		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-		require.Empty(t, fields)
+		CheckOKStatus(t, resp)
+		require.NoError(t, err)
+		require.NotEmpty(t, fields)
 	})
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("any user should be able to list fields", func(t *testing.T) {
@@ -167,15 +165,17 @@ func TestPatchCPAField(t *testing.T) {
 	})
 
 	th.TestForSystemAdminAndLocal(t, func(t *testing.T, client *model.Client4) {
+		// No license required (not an Enterprise-licensed feature in this fork); reaches the
+		// handler and fails only because the field doesn't exist.
 		patch := &model.PropertyFieldPatch{Name: model.NewPointer(model.NewId())}
 		patchedField, resp, err := client.PatchCPAField(context.Background(), model.NewId(), patch)
-		CheckForbiddenStatus(t, resp)
+		CheckNotFoundStatus(t, resp)
 		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
+		CheckErrorID(t, err, "app.custom_profile_attributes.property_field_not_found.app_error")
 		require.Empty(t, patchedField)
-	}, "endpoint should not work if no valid license is present")
+	}, "endpoint should work even with no valid license present")
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("a user without admin permissions should not be able to patch a field", func(t *testing.T) {
@@ -350,13 +350,15 @@ func TestDeleteCPAField(t *testing.T) {
 	})
 
 	th.TestForSystemAdminAndLocal(t, func(t *testing.T, client *model.Client4) {
+		// No license required (not an Enterprise-licensed feature in this fork); reaches the
+		// handler and fails only because the field doesn't exist.
 		resp, err := client.DeleteCPAField(context.Background(), model.NewId())
-		CheckForbiddenStatus(t, resp)
+		CheckNotFoundStatus(t, resp)
 		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-	}, "endpoint should not work if no valid license is present")
+		CheckErrorID(t, err, "app.custom_profile_attributes.property_field_not_found.app_error")
+	}, "endpoint should work even with no valid license present")
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("a user without admin permissions should not be able to delete a field", func(t *testing.T) {
@@ -438,15 +440,14 @@ func TestListCPAValues(t *testing.T) {
 	_, appErr = th.App.PatchCPAValue(request.TestContext(t), th.BasicUser.Id, createdField.ID, json.RawMessage(`"Field Value"`), true)
 	require.Nil(t, appErr)
 
-	t.Run("endpoint should not work if no valid license is present", func(t *testing.T) {
+	t.Run("endpoint should work even with no valid license present (not an Enterprise-licensed feature in this fork)", func(t *testing.T) {
 		values, resp, err := th.Client.ListCPAValues(context.Background(), th.BasicUser.Id)
-		CheckForbiddenStatus(t, resp)
-		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-		require.Empty(t, values)
+		CheckOKStatus(t, resp)
+		require.NoError(t, err)
+		require.NotEmpty(t, values)
 	})
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	// login with Client2 from this point on
@@ -520,16 +521,15 @@ func TestPatchCPAValues(t *testing.T) {
 	require.Nil(t, appErr)
 	require.NotNil(t, createdField)
 
-	t.Run("endpoint should not work if no valid license is present", func(t *testing.T) {
+	t.Run("endpoint should work even with no valid license present (not an Enterprise-licensed feature in this fork)", func(t *testing.T) {
 		values := map[string]json.RawMessage{createdField.ID: json.RawMessage(`"Field Value"`)}
 		patchedValues, resp, err := th.Client.PatchCPAValues(context.Background(), values)
-		CheckForbiddenStatus(t, resp)
-		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-		require.Empty(t, patchedValues)
+		CheckOKStatus(t, resp)
+		require.NoError(t, err)
+		require.NotEmpty(t, patchedValues)
 	})
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("any team member should be able to create their own values", func(t *testing.T) {
@@ -885,16 +885,15 @@ func TestPatchCPAValuesForUser(t *testing.T) {
 	require.Nil(t, appErr)
 	require.NotNil(t, createdField)
 
-	t.Run("endpoint should not work if no valid license is present", func(t *testing.T) {
+	t.Run("endpoint should work even with no valid license present (not an Enterprise-licensed feature in this fork)", func(t *testing.T) {
 		values := map[string]json.RawMessage{createdField.ID: json.RawMessage(`"Field Value"`)}
 		patchedValues, resp, err := th.Client.PatchCPAValuesForUser(context.Background(), th.BasicUser.Id, values)
-		CheckForbiddenStatus(t, resp)
-		require.Error(t, err)
-		CheckErrorID(t, err, "api.custom_profile_attributes.license_error")
-		require.Empty(t, patchedValues)
+		CheckOKStatus(t, resp)
+		require.NoError(t, err)
+		require.NotEmpty(t, patchedValues)
 	})
 
-	// add a valid license
+	// add a valid license, to confirm the endpoint also still works with one present
 	th.App.Srv().SetLicense(model.NewTestLicenseSKU(model.LicenseShortSkuEnterprise))
 
 	t.Run("any team member should be able to create their own values", func(t *testing.T) {

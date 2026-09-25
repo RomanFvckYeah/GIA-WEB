@@ -1,0 +1,52 @@
+.WelcomeFaqSetting {
+    display: flex;
+    max-width: 640px;
+    flex-direction: column;
+    gap: 12px;
+
+    &__empty {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+        font-size: 13px;
+    }
+
+    &__item {
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        border: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+        border-radius: 4px;
+        gap: 8px;
+    }
+
+    &__itemHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__itemNumber {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    &__itemActions {
+        display: flex;
+        gap: 4px;
+    }
+
+    &__label {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        color: rgba(var(--center-channel-color-rgb), 0.75);
+        font-size: 12px;
+        font-weight: 600;
+        gap: 4px;
+
+        input,
+        textarea {
+            font-weight: 400;
+        }
+    }
+}

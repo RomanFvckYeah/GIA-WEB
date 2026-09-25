@@ -6800,6 +6800,47 @@ func testGetUserReport(t *testing.T, rctx request.CTX, ss store.Store, s SqlStor
 		require.Equal(t, users[1].Id, userReport[1].Id)
 	})
 
+	t.Run("should return team count and panic button only status", func(t *testing.T) {
+		require.NoError(t, ss.PanicButtonOnlyUser().Save(rctx, users[2].Id, "test"))
+		defer func() {
+			require.NoError(t, ss.PanicButtonOnlyUser().Delete(users[2].Id))
+		}()
+
+		userReport, err := ss.User().GetUserReport(&model.UserReportOptions{
+			ReportingBaseOptions: model.ReportingBaseOptions{
+				SortColumn: "Username",
+				PageSize:   200,
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, userReport)
+
+		foundTeamMember, foundNoTeam, foundPanicOnly := false, false, false
+		for _, report := range userReport {
+			if report.Id == users[0].Id {
+				foundTeamMember = true
+				require.NotNil(t, report.TeamCount)
+				require.Equal(t, 1, *report.TeamCount)
+				require.False(t, report.PanicButtonOnly)
+			}
+			if report.Id == users[3].Id {
+				foundNoTeam = true
+				require.NotNil(t, report.TeamCount)
+				require.Equal(t, 0, *report.TeamCount)
+				require.False(t, report.PanicButtonOnly)
+			}
+			if report.Id == users[2].Id {
+				foundPanicOnly = true
+				require.NotNil(t, report.TeamCount)
+				require.Equal(t, 0, *report.TeamCount)
+				require.True(t, report.PanicButtonOnly)
+			}
+		}
+		require.True(t, foundTeamMember, "users[0] (real team member) not found in report")
+		require.True(t, foundNoTeam, "users[3] (no team) not found in report")
+		require.True(t, foundPanicOnly, "users[2] (panic button only) not found in report")
+	})
+
 	t.Run("should filter on activation", func(t *testing.T) {
 		userReport, err := ss.User().GetUserReport(&model.UserReportOptions{
 			ReportingBaseOptions: model.ReportingBaseOptions{

@@ -46,11 +46,13 @@ describe('components/logged_in/LoggedIn', () => {
         currentUser: {} as UserProfile,
         mfaRequired: false,
         customProfileAttributesEnabled: false,
+        panicButtonOnly: false,
         actions: {
             autoUpdateTimezone: jest.fn(),
             getChannelURLAction: jest.fn(),
             updateApproximateViewTime: jest.fn(),
             getCustomProfileAttributeFields: jest.fn(),
+            fetchIsCurrentUserPanicButtonOnly: jest.fn(),
         },
         isCurrentChannelManuallyUnread: false,
         showTermsOfService: false,
@@ -69,6 +71,50 @@ describe('components/logged_in/LoggedIn', () => {
         const {container} = renderWithContext(<LoggedIn {...props}>{children}</LoggedIn>);
 
         expect(container.querySelector('.loading-screen')).toBeInTheDocument();
+    });
+
+    it('should redirect to panic_restricted when panic button only and not there', () => {
+        const props = {
+            ...baseProps,
+            panicButtonOnly: true,
+        };
+
+        renderWithContext(<LoggedIn {...props}>{children}</LoggedIn>);
+
+        expect(Redirect).toHaveBeenCalledWith(
+            expect.objectContaining({to: '/panic_restricted'}),
+            {},
+        );
+    });
+
+    it('should render children when panic button only and already on /panic_restricted', () => {
+        const props = {
+            ...baseProps,
+            panicButtonOnly: true,
+            location: {
+                pathname: '/panic_restricted',
+                search: '',
+            },
+        };
+
+        renderWithContext(<LoggedIn {...props}>{children}</LoggedIn>);
+
+        expect(screen.getByText('Test')).toBeInTheDocument();
+    });
+
+    it('should redirect to panic_restricted rather than mfa/setup when both are required', () => {
+        const props = {
+            ...baseProps,
+            panicButtonOnly: true,
+            mfaRequired: true,
+        };
+
+        renderWithContext(<LoggedIn {...props}>{children}</LoggedIn>);
+
+        expect(Redirect).toHaveBeenCalledWith(
+            expect.objectContaining({to: '/panic_restricted'}),
+            {},
+        );
     });
 
     it('should redirect to mfa when required and not on /mfa/setup', () => {

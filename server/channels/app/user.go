@@ -2592,6 +2592,14 @@ func (a *App) UserCanSeeOtherUser(rctx request.CTX, userID string, otherUserId s
 		return true, nil
 	}
 
+	if a.IsGloballyDiscoverable(rctx, otherUserId) {
+		return true, nil
+	}
+
+	if a.IsDirectMessageException(rctx, userID, otherUserId) {
+		return true, nil
+	}
+
 	restrictions, err := a.GetViewUsersRestrictions(rctx, userID)
 	if err != nil {
 		return false, err

@@ -12,8 +12,8 @@ import {Client4} from 'mattermost-redux/client';
 import CopyButton from 'components/copy_button';
 import ExternalLink from 'components/external_link';
 import Nbsp from 'components/html_entities/nbsp';
-import MattermostLogo from 'components/widgets/icons/mattermost_logo';
 
+import GiaLogoIcon from 'images/LogoGIAWhite.png';
 import {AboutLinks} from 'utils/constants';
 import {getSkuDisplayName} from 'utils/subscription';
 import {getDesktopVersion, isDesktopApp} from 'utils/user_agent';
@@ -98,20 +98,7 @@ export default function AboutBuildModal(props: Props) {
         />
     );
 
-    let learnMore = (
-        <div>
-            <FormattedMessage
-                id='about.teamEditionLearn'
-                defaultMessage='Join the Mattermost community at '
-            />
-            <ExternalLink
-                location='about_build_modal'
-                href='https://mattermost.com/community/'
-            >
-                {'mattermost.com/community/'}
-            </ExternalLink>
-        </div>
-    );
+    let learnMore: React.ReactNode = null;
 
     let licensee;
     if (config.BuildEnterpriseReady === 'true') {
@@ -137,7 +124,7 @@ export default function AboutBuildModal(props: Props) {
                 <div>
                     <FormattedMessage
                         id='about.planNameLearn'
-                        defaultMessage='Learn more about Mattermost {planName} at {link}'
+                        defaultMessage='Learn more about GIA {planName} at {link}'
                         values={{
                             planName: skuName,
                             link: (
@@ -318,7 +305,7 @@ export default function AboutBuildModal(props: Props) {
                     <FormattedMessage
                         id='about.title'
                         values={{
-                            appTitle: config.SiteName || 'Mattermost',
+                            appTitle: config.SiteName || 'GIA',
                         }}
                         defaultMessage='About {appTitle}'
                     />
@@ -327,12 +314,16 @@ export default function AboutBuildModal(props: Props) {
             <Modal.Body>
                 <div className='about-modal__content'>
                     <div className='about-modal__logo'>
-                        <MattermostLogo/>
+                        <img
+                            src={GiaLogoIcon}
+                            alt='Guardián Inteligente'
+                            className='about-modal__logo-image'
+                        />
                     </div>
                     <div>
                         <h3 className='about-modal__title'>
                             <strong>
-                                {'Mattermost'} {title}
+                                {'GIA'} {title}
                             </strong>
                         </h3>
                         <p className='about-modal__subtitle pb-2'>
@@ -374,7 +365,7 @@ export default function AboutBuildModal(props: Props) {
                         <div className='about-modal__copyright'>
                             <FormattedMessage
                                 id='about.copyright'
-                                defaultMessage='Copyright 2015 - {currentYear} Mattermost, Inc. All rights reserved'
+                                defaultMessage='Copyright 2015 - {currentYear} Okip, Inc. All rights reserved'
                                 values={{
                                     currentYear: new Date().getFullYear(),
                                 }}
@@ -391,7 +382,7 @@ export default function AboutBuildModal(props: Props) {
                     <p>
                         <FormattedMessage
                             id='about.notice'
-                            defaultMessage='Mattermost is made possible by the open source software used in our <linkServer>server</linkServer>, <linkDesktop>desktop</linkDesktop> and <linkMobile>mobile</linkMobile> apps.'
+                            defaultMessage='GIA is made possible by the open source software used in our <linkServer>server</linkServer>, <linkDesktop>desktop</linkDesktop> and <linkMobile>mobile</linkMobile> apps.'
                             values={{
                                 linkServer: (msg: React.ReactNode) => (
                                     <ExternalLink

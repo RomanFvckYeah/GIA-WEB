@@ -555,6 +555,55 @@ export function removeUserFromTeam(teamId: string, userId: string): ActionFuncAs
     };
 }
 
+export function getTeamOrganizationMembers(teamId: string) {
+    return bindClientFunc({
+        clientFunc: Client4.getTeamOrganizationMembers,
+        params: [
+            teamId,
+        ],
+    });
+}
+
+export function addTeamOrganizationMember(teamId: string, userId: string) {
+    return bindClientFunc({
+        clientFunc: Client4.addTeamOrganizationMember,
+        params: [
+            teamId,
+            userId,
+        ],
+    });
+}
+
+export function removeTeamOrganizationMember(teamId: string, userId: string) {
+    return bindClientFunc({
+        clientFunc: Client4.removeTeamOrganizationMember,
+        params: [
+            teamId,
+            userId,
+        ],
+    });
+}
+
+export function getOrganizationTeamsForUser(userId: string) {
+    return bindClientFunc({
+        clientFunc: Client4.getUserOrganizationTeams,
+        params: [
+            userId,
+        ],
+    });
+}
+
+export function createTeamMember(teamId: string, user: UserProfile, options?: {sendCredentials?: boolean}) {
+    return bindClientFunc({
+        clientFunc: Client4.createTeamMember,
+        params: [
+            teamId,
+            user,
+            options,
+        ],
+    });
+}
+
 export function sendEmailInvitesToTeam(teamId: string, emails: string[]) {
     return bindClientFunc({
         clientFunc: Client4.sendEmailInvitesToTeam,

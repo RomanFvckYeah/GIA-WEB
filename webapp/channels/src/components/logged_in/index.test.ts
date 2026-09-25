@@ -55,7 +55,7 @@ describe('LoggedIn mapStateToProps', () => {
     });
 
     describe('customProfileAttributesEnabled', () => {
-        it('should be false when not Enterprise license', () => {
+        it('should be true when not Enterprise license but feature flag enabled (not an Enterprise-licensed feature in this fork)', () => {
             const state = mergeObjects(baseState, {
                 entities: {
                     general: {
@@ -71,7 +71,7 @@ describe('LoggedIn mapStateToProps', () => {
 
             const props = mapStateToProps(state, baseProps);
 
-            expect(props.customProfileAttributesEnabled).toBe(false);
+            expect(props.customProfileAttributesEnabled).toBe(true);
         });
 
         it('should be false when Enterprise license but feature flag disabled', () => {
@@ -132,7 +132,7 @@ describe('LoggedIn mapStateToProps', () => {
             expect(props.customProfileAttributesEnabled).toBe(true);
         });
 
-        it('should be false when no license information available', () => {
+        it('should be true when no license information available, as long as the feature flag is enabled', () => {
             const state = mergeObjects(baseState, {
                 entities: {
                     general: {
@@ -146,7 +146,7 @@ describe('LoggedIn mapStateToProps', () => {
 
             const props = mapStateToProps(state, baseProps);
 
-            expect(props.customProfileAttributesEnabled).toBe(false);
+            expect(props.customProfileAttributesEnabled).toBe(true);
         });
     });
 

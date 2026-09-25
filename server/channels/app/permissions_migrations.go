@@ -1266,6 +1266,47 @@ func (a *App) getAddChannelAutoTranslationPermissionMigration() (permissionsMap,
 	}, nil
 }
 
+// Lets team admins pull analytics (message/active-user counts) for their own team via
+// SessionHasPermissionToTeam, without granting them any system-wide sysconsole access.
+func (a *App) getAddGetAnalyticsPermissionToTeamAdminMigration() (permissionsMap, error) {
+	return permissionsMap{
+		permissionTransformation{
+			On:  isRole(model.TeamAdminRoleId),
+			Add: []string{model.PermissionGetAnalytics.Id},
+		},
+	}, nil
+}
+
+// Lets team admins add/remove members on any channel in their own team via the existing
+// SessionHasPermissionToChannel -> SessionHasPermissionToTeam fallback, even for channels
+// they haven't personally joined.
+func (a *App) getAddChannelMembersPermissionToTeamAdminMigration() (permissionsMap, error) {
+	return permissionsMap{
+		permissionTransformation{
+			On: isRole(model.TeamAdminRoleId),
+			Add: []string{
+				model.PermissionManagePublicChannelMembers.Id,
+				model.PermissionManagePrivateChannelMembers.Id,
+			},
+		},
+	}, nil
+}
+
+// Lets team admins view the member list (and member count) of any channel in their own
+// team via the SessionHasPermissionToChannel -> SessionHasPermissionToTeam fallback, even
+// for private channels they haven't personally joined.
+func (a *App) getAddChannelReadPermissionToTeamAdminMigration() (permissionsMap, error) {
+	return permissionsMap{
+		permissionTransformation{
+			On: isRole(model.TeamAdminRoleId),
+			Add: []string{
+				model.PermissionReadChannel.Id,
+				model.PermissionReadChannelContent.Id,
+			},
+		},
+	}, nil
+}
+
 // Only sysadmins, team admins, and users with channels and groups managements have access to "convert channel to public"
 func (a *App) getRestrictAcessToChannelConversionToPublic() (permissionsMap, error) {
 	return []permissionTransformation{
@@ -1390,6 +1431,9 @@ func (s *Server) doPermissionsMigrations() error {
 		{Key: model.MigrationKeyRestoreManageOAuthPermission, Migration: a.getRestoreManageOAuthPermissionMigration},
 		{Key: model.MigrationKeyAddManageAgentPermissions, Migration: a.getAddManageAgentPermissionsMigration},
 		{Key: model.MigrationKeyAddEditFileAttachmentPermission, Migration: a.getAddEditFileAttachmentPermissionMigration},
+		{Key: model.MigrationKeyAddGetAnalyticsPermissionToTeamAdmin, Migration: a.getAddGetAnalyticsPermissionToTeamAdminMigration},
+		{Key: model.MigrationKeyAddChannelMembersPermissionToTeamAdmin, Migration: a.getAddChannelMembersPermissionToTeamAdminMigration},
+		{Key: model.MigrationKeyAddChannelReadPermissionToTeamAdmin, Migration: a.getAddChannelReadPermissionToTeamAdminMigration},
 	}
 
 	roles, err := s.Store().Role().GetAll()

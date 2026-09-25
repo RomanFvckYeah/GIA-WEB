@@ -180,6 +180,42 @@ describe('SystemUserDetail', () => {
             await userEventInstance.type(usernameInput, 'newusername');
             expect(defaultProps.setNavigationBlocked).toHaveBeenCalledWith(true);
         });
+
+        test('should detect first name changes and enable save', async () => {
+            const userEventInstance = userEvent.setup();
+            renderWithContext(<SystemUserDetail {...defaultProps}/>);
+
+            await waitForElementToBeRemoved(() => screen.queryAllByTestId('loadingSpinner'));
+
+            const firstNameInput = screen.getByPlaceholderText('Enter first name');
+            await userEventInstance.clear(firstNameInput);
+            await userEventInstance.type(firstNameInput, 'NewFirstName');
+            expect(defaultProps.setNavigationBlocked).toHaveBeenCalledWith(true);
+        });
+
+        test('should detect last name changes and enable save', async () => {
+            const userEventInstance = userEvent.setup();
+            renderWithContext(<SystemUserDetail {...defaultProps}/>);
+
+            await waitForElementToBeRemoved(() => screen.queryAllByTestId('loadingSpinner'));
+
+            const lastNameInput = screen.getByPlaceholderText('Enter last name');
+            await userEventInstance.clear(lastNameInput);
+            await userEventInstance.type(lastNameInput, 'NewLastName');
+            expect(defaultProps.setNavigationBlocked).toHaveBeenCalledWith(true);
+        });
+
+        test('should detect position changes and enable save', async () => {
+            const userEventInstance = userEvent.setup();
+            renderWithContext(<SystemUserDetail {...defaultProps}/>);
+
+            await waitForElementToBeRemoved(() => screen.queryAllByTestId('loadingSpinner'));
+
+            const positionInput = screen.getByPlaceholderText('Enter position');
+            await userEventInstance.clear(positionInput);
+            await userEventInstance.type(positionInput, 'New Position');
+            expect(defaultProps.setNavigationBlocked).toHaveBeenCalledWith(true);
+        });
     });
 
     describe('email validation', () => {

@@ -1659,6 +1659,50 @@ func TestPatchChannel(t *testing.T) {
 		require.Equal(t, newHeader, patchedChannel.Header)
 		require.True(t, patchedChannel.AutoTranslation)
 	})
+
+	t.Run("read_only can only be set by system_admin, and only on open/private channels", func(t *testing.T) {
+		channel := th.CreatePublicChannel(t)
+
+		regularUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, regularUser, team)
+		th.AddUserToChannel(t, regularUser, channel)
+
+		teamAdminUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, teamAdminUser, team)
+		th.UpdateUserToTeamAdmin(t, teamAdminUser, team)
+
+		channelAdminUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, channelAdminUser, team)
+		th.AddUserToChannel(t, channelAdminUser, channel)
+		th.MakeUserChannelAdmin(t, channelAdminUser, channel)
+
+		readOnlyPatch := &model.ChannelPatch{ReadOnly: model.NewPointer(true)}
+
+		for _, u := range []*model.User{regularUser, teamAdminUser, channelAdminUser} {
+			_, _, err := client.Login(context.Background(), u.Email, u.Password)
+			require.NoError(t, err)
+
+			_, resp, err := client.PatchChannel(context.Background(), channel.Id, readOnlyPatch)
+			require.Error(t, err)
+			CheckForbiddenStatus(t, resp)
+
+			_, err = client.Logout(context.Background())
+			require.NoError(t, err)
+		}
+
+		patchedChannel, resp, err := th.SystemAdminClient.PatchChannel(context.Background(), channel.Id, readOnlyPatch)
+		require.NoError(t, err)
+		CheckOKStatus(t, resp)
+		require.True(t, patchedChannel.ReadOnly)
+
+		dmChannel, _, err := th.SystemAdminClient.CreateDirectChannel(context.Background(), th.SystemAdminUser.Id, regularUser.Id)
+		require.NoError(t, err)
+		_, resp, err = th.SystemAdminClient.PatchChannel(context.Background(), dmChannel.Id, readOnlyPatch)
+		require.Error(t, err)
+		CheckBadRequestStatus(t, resp)
+
+		th.LoginBasic(t)
+	})
 }
 
 func TestCanEditChannelBanner(t *testing.T) {

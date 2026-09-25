@@ -73,6 +73,7 @@ export type Channel = {
     default_category_name?: string;
     managed_category_name?: string;
     autotranslation?: boolean;
+    read_only?: boolean;
 };
 
 export type ServerChannel = Channel & {

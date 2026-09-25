@@ -13,6 +13,7 @@ export type GeneralState = {
     serverVersion: string;
     customProfileAttributes: IDMappedObjects<UserPropertyField>;
     cwsAvailability: 'pending' | 'available' | 'unavailable' | 'not_applicable';
+    panicButtonOnly: boolean;
 };
 
 export type SystemSetting = {

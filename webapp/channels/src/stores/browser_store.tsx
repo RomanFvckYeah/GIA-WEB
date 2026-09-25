@@ -84,10 +84,6 @@ class BrowserStoreClass {
         return localStorage.getItem(StoragePrefixes.LANDING_PREFERENCE + String(siteUrl));
     }
 
-    setLandingPreferenceToMattermostApp(siteUrl?: string) {
-        localStorage.setItem(StoragePrefixes.LANDING_PREFERENCE + String(siteUrl), LandingPreferenceTypes.MATTERMOSTAPP);
-    }
-
     setLandingPreferenceToBrowser(siteUrl?: string) {
         localStorage.setItem(StoragePrefixes.LANDING_PREFERENCE + String(siteUrl), LandingPreferenceTypes.BROWSER);
     }

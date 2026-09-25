@@ -317,7 +317,9 @@ func getUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if c.IsSystemAdmin() || c.AppContext.Session().UserId == user.Id {
+	isSelf := c.AppContext.Session().UserId == user.Id
+
+	if c.IsSystemAdmin() || isSelf {
 		userTermsOfService, err := c.App.GetUserTermsOfService(user.Id)
 		if err != nil && err.StatusCode != http.StatusNotFound {
 			c.Err = err
@@ -330,16 +332,33 @@ func getUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Computed here (before the etag check, not inside the Sanitize branch below) because
+	// toggling this flag only touches the separate PanicButtonOnlyUsers table, not
+	// Users.UpdateAt — user.Etag() wouldn't change, so a client polling /users/me with a cached
+	// etag from before the toggle would get a stale 304 and never see the new value unless it's
+	// folded into the etag here.
+	var isPanicButtonOnly bool
+	if isSelf {
+		isPanicButtonOnly = c.App.AttachPanicButtonOnlyProp(c.AppContext, user)
+	}
+
 	etag := user.Etag(*c.App.Config().PrivacySettings.ShowFullName, *c.App.Config().PrivacySettings.ShowEmailAddress)
+	if isSelf {
+		etag += ":pbo=" + strconv.FormatBool(isPanicButtonOnly)
+	}
 
 	if c.HandleEtag(etag, "Get User", w, r) {
 		return
 	}
 
-	if c.AppContext.Session().UserId == user.Id {
+	if isSelf {
 		user.Sanitize(map[string]bool{})
 	} else {
-		c.App.SanitizeProfile(user, c.IsSystemAdmin())
+		// A team_admin authorized via SessionHasPermissionToUserViaTeamAdmin (see
+		// patchUser/updatePassword) also needs the unsanitized profile — otherwise the
+		// email/full name they're allowed to edit would come back blank.
+		asAdmin := c.IsSystemAdmin() || c.App.SessionHasPermissionToUserViaTeamAdmin(c.AppContext, *c.AppContext.Session(), user.Id)
+		c.App.SanitizeProfile(user, asAdmin)
 	}
 	c.App.Srv().Platform().UpdateLastActivityAtIfNeeded(*c.AppContext.Session())
 	w.Header().Set(model.HeaderEtagServer, etag)
@@ -1456,7 +1475,8 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 	model.AddEventParameterAuditableToAuditRec(auditRec, "user_patch", &patch)
 	defer c.LogAuditRec(auditRec)
 
-	if !c.App.SessionHasPermissionToUserOrBot(c.AppContext, *c.AppContext.Session(), c.Params.UserId) {
+	if !c.App.SessionHasPermissionToUserOrBot(c.AppContext, *c.AppContext.Session(), c.Params.UserId) &&
+		!c.App.SessionHasPermissionToUserViaTeamAdmin(c.AppContext, *c.AppContext.Session(), c.Params.UserId) {
 		c.SetPermissionError(model.PermissionEditOtherUsers)
 		return
 	}
@@ -1875,7 +1895,8 @@ func updatePassword(c *Context, w http.ResponseWriter, r *http.Request) {
 		if user.IsSystemAdmin() {
 			canUpdatePassword = c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem)
 		} else {
-			canUpdatePassword = c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionSysconsoleWriteUserManagementUsers)
+			canUpdatePassword = c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionSysconsoleWriteUserManagementUsers) ||
+				c.App.SessionHasPermissionToUserViaTeamAdmin(c.AppContext, *c.AppContext.Session(), c.Params.UserId)
 		}
 	}
 
@@ -2138,6 +2159,8 @@ func login(c *Context, w http.ResponseWriter, r *http.Request) {
 		user.TermsOfServiceId = userTermsOfService.TermsOfServiceId
 		user.TermsOfServiceCreateAt = userTermsOfService.CreateAt
 	}
+
+	c.App.AttachPanicButtonOnlyProp(c.AppContext, user)
 
 	user.Sanitize(map[string]bool{})
 

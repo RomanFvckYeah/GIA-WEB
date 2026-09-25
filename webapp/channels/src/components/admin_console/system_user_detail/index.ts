@@ -10,21 +10,21 @@ import {getCustomProfileAttributeFields} from 'mattermost-redux/actions/general'
 import {getUserPreferences} from 'mattermost-redux/actions/preferences';
 import {addUserToTeam} from 'mattermost-redux/actions/teams';
 import {updateUserActive, updateUserAuth, getUser, patchUser, updateUserMfa, getCustomProfileAttributeValues, saveCustomProfileAttribute} from 'mattermost-redux/actions/users';
-import {getConfig, getCustomProfileAttributes, getLicense, isCustomProfileAttributesEnabled} from 'mattermost-redux/selectors/entities/general';
+import {getConfig, getCustomProfileAttributes, isCustomProfileAttributesEnabled} from 'mattermost-redux/selectors/entities/general';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
 import {setNavigationBlocked} from 'actions/admin_actions.jsx';
 import {openModal} from 'actions/views/modals';
 import {getShowLockedManageUserSettings, getShowManageUserSettings} from 'selectors/admin_console';
 
-import {isEnterpriseLicense} from 'utils/license_utils';
-
 import SystemUserDetail from './system_user_detail';
 
 function mapStateToProps(state: GlobalState) {
-    const license = getLicense(state);
     const config = getConfig(state);
-    const customProfileAttributeEnabled = isEnterpriseLicense(license) && isCustomProfileAttributesEnabled(state);
+
+    // Deliberately not gated on license tier, unlike upstream: User Attributes is not an
+    // Enterprise-licensed feature in this fork.
+    const customProfileAttributeEnabled = isCustomProfileAttributesEnabled(state);
     const customProfileAttributeFields = customProfileAttributeEnabled ? getCustomProfileAttributes(state) : [];
 
     const showManageUserSettings = getShowManageUserSettings(state);

@@ -19,6 +19,8 @@ describe('admin_console/team_channel_settings/channel/ChannelModes', () => {
                 groupsSupported={true}
                 policyEnforced={false}
                 policyEnforcedToggleAvailable={false}
+                isReadOnly={false}
+                onReadOnlyToggle={jest.fn()}
             />,
         );
         expect(container).toMatchSnapshot();
@@ -35,6 +37,8 @@ describe('admin_console/team_channel_settings/channel/ChannelModes', () => {
                 groupsSupported={false}
                 policyEnforced={false}
                 policyEnforcedToggleAvailable={false}
+                isReadOnly={false}
+                onReadOnlyToggle={jest.fn()}
             />,
         );
         expect(container).toMatchSnapshot();

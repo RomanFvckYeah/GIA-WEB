@@ -9,6 +9,58 @@ import type {PasswordConfig} from 'mattermost-redux/selectors/entities/general';
 
 import Constants from 'utils/constants';
 
+const PASSWORD_GEN_LOWERCASE = 'abcdefghijkmnopqrstuvwxyz';
+const PASSWORD_GEN_UPPERCASE = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const PASSWORD_GEN_NUMBERS = '23456789';
+const PASSWORD_GEN_SYMBOLS = '!@#$%^&*-_=+';
+
+function randomInt(maxExclusive: number): number {
+    const buf = new Uint32Array(1);
+    window.crypto.getRandomValues(buf);
+    return buf[0] % maxExclusive;
+}
+
+function randomChar(pool: string): string {
+    return pool.charAt(randomInt(pool.length));
+}
+
+// generatePassword returns a random password that satisfies any possible
+// PasswordSettings: it always includes at least one lowercase letter, uppercase
+// letter, number and symbol, so it passes regardless of which character classes
+// the server requires. Length is at least 16 (and never below the configured
+// minimum). Ambiguous characters (0/O, 1/l/I) are excluded for readability.
+export function generatePassword(passwordConfig: PasswordConfig): string {
+    const minimumLength = Math.max(passwordConfig.minimumLength || Constants.MIN_PASSWORD_LENGTH, 16);
+    const targetLength = Math.min(minimumLength, Constants.MAX_PASSWORD_LENGTH);
+    const allChars = PASSWORD_GEN_LOWERCASE + PASSWORD_GEN_UPPERCASE + PASSWORD_GEN_NUMBERS + PASSWORD_GEN_SYMBOLS;
+
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const chars = [
+            randomChar(PASSWORD_GEN_LOWERCASE),
+            randomChar(PASSWORD_GEN_UPPERCASE),
+            randomChar(PASSWORD_GEN_NUMBERS),
+            randomChar(PASSWORD_GEN_SYMBOLS),
+        ];
+        while (chars.length < targetLength) {
+            chars.push(randomChar(allChars));
+        }
+
+        // Fisher-Yates shuffle so the guaranteed characters are not always first.
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = randomInt(i + 1);
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+
+        const password = chars.join('');
+        if (isValidPassword(password, passwordConfig).valid) {
+            return password;
+        }
+    }
+
+    // Extremely unlikely fallback: a long all-class string is valid for any config.
+    return (PASSWORD_GEN_UPPERCASE + PASSWORD_GEN_LOWERCASE + PASSWORD_GEN_NUMBERS + PASSWORD_GEN_SYMBOLS).slice(0, targetLength);
+}
+
 export function isValidPassword(password: string, passwordConfig: PasswordConfig, intl?: IntlShape) {
     let errorId: keyof typeof passwordErrors = 'passwordError';
     let valid = true;

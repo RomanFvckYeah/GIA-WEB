@@ -1,0 +1,17 @@
+.WelcomeFaqMenu {
+    &__prompt {
+        margin-bottom: 8px;
+    }
+
+    &__options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__option {
+        max-width: 100%;
+        white-space: normal;
+        text-align: left;
+    }
+}

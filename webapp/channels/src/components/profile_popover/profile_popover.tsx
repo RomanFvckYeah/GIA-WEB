@@ -5,7 +5,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 import {getCurrentChannelId, getCurrentUserId} from 'mattermost-redux/selectors/entities/common';
-import {getLicense, getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
+import {getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
 import {getCurrentRelativeTeamUrl, getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {getCurrentTimezone} from 'mattermost-redux/selectors/entities/timezone';
 import {getStatusForUserId, getUser} from 'mattermost-redux/selectors/entities/users';
@@ -23,7 +23,6 @@ import Pluggable from 'plugins/pluggable';
 import {getHistory} from 'utils/browser_history';
 import {A11yCustomEventTypes, UserStatuses} from 'utils/constants';
 import type {A11yFocusEventDetail} from 'utils/constants';
-import {isEnterpriseLicense} from 'utils/license_utils';
 import * as Utils from 'utils/utils';
 
 import type {GlobalState} from 'types/store';
@@ -83,9 +82,10 @@ const ProfilePopover = ({
     const status = useSelector((state: GlobalState) => getStatusForUserId(state, userId) || UserStatuses.OFFLINE);
     const currentUserTimezone = useSelector(getCurrentTimezone);
     const currentUserId = useSelector(getCurrentUserId);
-    const license = useSelector((state: GlobalState) => getLicense(state));
-    const isEnterprise = isEnterpriseLicense(license);
-    const enableCustomProfileAttributes = useSelector((state: GlobalState) => getFeatureFlagValue(state, 'CustomProfileAttributes') === 'true' && isEnterprise && !fromWebhook);
+
+    // Deliberately not gated on license tier, unlike upstream: User Attributes is not an
+    // Enterprise-licensed feature in this fork.
+    const enableCustomProfileAttributes = useSelector((state: GlobalState) => getFeatureFlagValue(state, 'CustomProfileAttributes') === 'true' && !fromWebhook);
 
     const [loadingDMChannel, setLoadingDMChannel] = useState<string>();
 

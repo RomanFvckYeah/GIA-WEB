@@ -90,6 +90,44 @@ func (a *App) SessionHasPermissionToTeams(rctx request.CTX, session model.Sessio
 	return true
 }
 
+// SessionHasPermissionToUserViaTeamAdmin returns true if the session holds the given
+// permission on at least one team the target user belongs to, and both the session's user
+// and the target user are marked as genuine organization members of that team (see
+// IsUserOrgMemberOfTeam). User-account permissions (PermissionEditOtherUsers,
+// PermissionSysconsoleWriteUserManagementUsers) have no native team scope, so this lets a
+// team_admin manage accounts of fellow organization members in their own team(s) without
+// granting them server-wide user-management permissions.
+func (a *App) SessionHasPermissionToUserViaTeamAdmin(rctx request.CTX, session model.Session, userID string) bool {
+	teamMembers, err := a.GetTeamMembersForUser(rctx, userID, "", false)
+	if err != nil {
+		return false
+	}
+	for _, tm := range teamMembers {
+		if a.SessionHasPermissionToTeam(session, tm.TeamId, model.PermissionManageTeam) &&
+			a.IsUserOrgMemberOfTeam(rctx, tm.TeamId, userID) &&
+			a.IsUserOrgMemberOfTeam(rctx, tm.TeamId, session.UserId) {
+			return true
+		}
+	}
+	return false
+}
+
+// SessionHasPermissionToOrgMemberViaTeamAdmin returns true if the session holds
+// PermissionManageTeam on a team it is itself a real member of, where the target userID is a
+// genuine organization member of that same team (see IsUserOrgMemberOfTeam). Unlike
+// SessionHasPermissionToUserViaTeamAdmin, this does NOT look up the target's own team
+// memberships — it can't, since a panic-button-only user (the main reason this exists) never
+// has any. Instead it walks the session's own teams, which a team_admin always has.
+func (a *App) SessionHasPermissionToOrgMemberViaTeamAdmin(rctx request.CTX, session model.Session, userID string) bool {
+	for _, tm := range session.TeamMembers {
+		if a.SessionHasPermissionToTeam(session, tm.TeamId, model.PermissionManageTeam) &&
+			a.IsUserOrgMemberOfTeam(rctx, tm.TeamId, userID) {
+			return true
+		}
+	}
+	return false
+}
+
 // SessionHasPermissionToChannel checks if the session has permission to the given channel.
 //
 // Returns:

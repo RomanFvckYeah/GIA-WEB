@@ -19,6 +19,8 @@ interface Props {
     abacSupported?: boolean;
     policyEnforced: boolean;
     policyEnforcedToggleAvailable: boolean;
+    isReadOnly: boolean;
+    onReadOnlyToggle: () => void;
 }
 
 const SyncGroupsToggle = (props: Props): JSX.Element => {
@@ -123,7 +125,7 @@ const PolicyEnforceToggle = (props: Props): JSX.Element | null => {
             id='policy-enforce-toggle'
             disabled={isDisabled || isSynced || isPublic || !policyEnforcedToggleAvailable}
             toggled={policyEnforced}
-            last={true}
+            last={false}
             onToggle={() => {
                 if (isDefault || !policyEnforcedToggleAvailable) {
                     return;
@@ -152,8 +154,33 @@ const PolicyEnforceToggle = (props: Props): JSX.Element | null => {
     );
 };
 
+const ReadOnlyToggle = (props: Props): JSX.Element => {
+    const {isDisabled, isReadOnly, onReadOnlyToggle} = props;
+    return (
+        <LineSwitch
+            id='read-only-toggle'
+            disabled={isDisabled}
+            toggled={isReadOnly}
+            last={true}
+            onToggle={onReadOnlyToggle}
+            title={(
+                <FormattedMessage
+                    id='admin.channel_settings.channel_details.readOnlyTitle'
+                    defaultMessage='Read-only channel'
+                />
+            )}
+            subTitle={(
+                <FormattedMessage
+                    id='admin.channel_settings.channel_details.readOnlyDescr'
+                    defaultMessage='When enabled, only the channel admins of this channel, the team admins of this team, and system admins can post messages. All other members can still read the channel.'
+                />
+            )}
+        />
+    );
+};
+
 export const ChannelModes = (props: Props): JSX.Element => {
-    const {isPublic, isSynced, isDefault, onToggle, isDisabled, groupsSupported, policyEnforced, policyEnforcedToggleAvailable, abacSupported} = props;
+    const {isPublic, isSynced, isDefault, onToggle, isDisabled, groupsSupported, policyEnforced, policyEnforcedToggleAvailable, abacSupported, isReadOnly, onReadOnlyToggle} = props;
     return (
         <AdminPanel
             id='channel_manage'
@@ -192,6 +219,17 @@ export const ChannelModes = (props: Props): JSX.Element => {
                             policyEnforcedToggleAvailable={policyEnforcedToggleAvailable}
                         />
                     }
+                    <ReadOnlyToggle
+                        isPublic={isPublic}
+                        isSynced={isSynced}
+                        isDefault={isDefault}
+                        onToggle={onToggle}
+                        isDisabled={isDisabled}
+                        policyEnforced={policyEnforced}
+                        policyEnforcedToggleAvailable={policyEnforcedToggleAvailable}
+                        isReadOnly={isReadOnly}
+                        onReadOnlyToggle={onReadOnlyToggle}
+                    />
                 </div>
             </div>
         </AdminPanel>

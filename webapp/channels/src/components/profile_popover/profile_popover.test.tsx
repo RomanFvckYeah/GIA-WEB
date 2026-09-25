@@ -707,7 +707,7 @@ describe('components/ProfilePopover', () => {
         });
     });
 
-    test('should not display attributes without Enterprise license', async () => {
+    test('should display attributes without an Enterprise license, as long as the feature flag is enabled (not an Enterprise-licensed feature in this fork)', async () => {
         const [props, initialState] = getBasePropsAndState();
         (Client4.getUserCustomProfileAttributesValues as jest.Mock).mockImplementation(async () => {
             return {
@@ -727,12 +727,9 @@ describe('components/ProfilePopover', () => {
         };
 
         renderWithPluginReducers(<ProfilePopover {...props}/>, initialState);
-        await act(async () => {
-            expect(await screen.queryByText('Rank')).not.toBeInTheDocument();
-            expect(await screen.queryByText('CO')).not.toBeInTheDocument();
-            expect(await screen.queryByText('Private')).not.toBeInTheDocument();
-            expect(await screen.queryByText('Seargent York')).not.toBeInTheDocument();
-        });
+
+        expect(await screen.findByText('Private')).toBeInTheDocument();
+        expect(await screen.findByText('Seargent York')).toBeInTheDocument();
     });
 
     test('should display attributes with Enterprise license and feature flag', async () => {

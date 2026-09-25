@@ -9,6 +9,7 @@ export {
     DEFAULT_LIMIT_AFTER,
     DEFAULT_LIMIT_BEFORE,
 } from './client4';
+export type {DirectMessageException} from './client4';
 
 export {default as WebSocketClient} from './websocket';
 export {WebSocketEvents} from './websocket_events';

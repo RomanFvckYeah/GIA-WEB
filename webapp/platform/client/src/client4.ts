@@ -103,6 +103,7 @@ import type {
     MarketplacePlugin,
 } from '@mattermost/types/marketplace';
 import type {MfaSecret} from '@mattermost/types/mfa';
+import type {AddOperationalTrackingGroupMemberResponse, OperationalTrackingGroup, OperationalTrackingGroupMember} from '@mattermost/types/operational_tracking_groups';
 import type {
     ClientPluginManifest,
     PluginManifest,
@@ -179,6 +180,13 @@ const AUTOCOMPLETE_LIMIT_DEFAULT = 25;
 const PER_PAGE_DEFAULT = 60;
 export const DEFAULT_LIMIT_BEFORE = 30;
 export const DEFAULT_LIMIT_AFTER = 30;
+
+export type DirectMessageException = {
+    user_id_1: string;
+    user_id_2: string;
+    create_at: number;
+    create_by: string;
+};
 
 export default class Client4 {
     logToConsole = false;
@@ -286,6 +294,18 @@ export default class Client4 {
 
     getUserRoute(userId: string) {
         return `${this.getUsersRoute()}/${userId}`;
+    }
+
+    getDirectMessageExceptionsRoute() {
+        return `${this.getBaseRoute()}/direct_message_exceptions`;
+    }
+
+    getGloballyDiscoverableUsersRoute() {
+        return `${this.getBaseRoute()}/globally_discoverable_users`;
+    }
+
+    getPanicButtonOnlyUsersRoute() {
+        return `${this.getBaseRoute()}/panic_button_only_users`;
     }
 
     getTeamsRoute() {
@@ -1513,6 +1533,161 @@ export default class Client4 {
         return this.doFetch<TeamStats>(
             `${this.getTeamRoute(teamId)}/stats`,
             {method: 'get'},
+        );
+    };
+
+    getTeamOrganizationMembers = (teamId: string) => {
+        return this.doFetch<string[]>(
+            `${this.getTeamRoute(teamId)}/organization_members`,
+            {method: 'get'},
+        );
+    };
+
+    addTeamOrganizationMember = (teamId: string, userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getTeamRoute(teamId)}/organization_members/${userId}`,
+            {method: 'post'},
+        );
+    };
+
+    removeTeamOrganizationMember = (teamId: string, userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getTeamRoute(teamId)}/organization_members/${userId}`,
+            {method: 'delete'},
+        );
+    };
+
+    getUserOrganizationTeams = (userId: string) => {
+        return this.doFetch<string[]>(
+            `${this.getUserRoute(userId)}/organization_teams`,
+            {method: 'get'},
+        );
+    };
+
+    createOperationalTrackingGroup = (teamId: string, name: string) => {
+        return this.doFetch<OperationalTrackingGroup>(
+            `${this.getTeamRoute(teamId)}/operational_tracking_groups`,
+            {method: 'post', body: JSON.stringify({name})},
+        );
+    };
+
+    getOperationalTrackingGroupsForTeam = (teamId: string) => {
+        return this.doFetch<OperationalTrackingGroup[]>(
+            `${this.getTeamRoute(teamId)}/operational_tracking_groups`,
+            {method: 'get'},
+        );
+    };
+
+    deleteOperationalTrackingGroup = (groupId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getBaseRoute()}/operational_tracking_groups/${groupId}`,
+            {method: 'delete'},
+        );
+    };
+
+    getOperationalTrackingGroupMembers = (groupId: string) => {
+        return this.doFetch<OperationalTrackingGroupMember[]>(
+            `${this.getBaseRoute()}/operational_tracking_groups/${groupId}/members`,
+            {method: 'get'},
+        );
+    };
+
+    addOperationalTrackingGroupMember = (groupId: string, userId: string) => {
+        return this.doFetch<AddOperationalTrackingGroupMemberResponse>(
+            `${this.getBaseRoute()}/operational_tracking_groups/${groupId}/members/${userId}`,
+            {method: 'post'},
+        );
+    };
+
+    removeOperationalTrackingGroupMember = (groupId: string, userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getBaseRoute()}/operational_tracking_groups/${groupId}/members/${userId}`,
+            {method: 'delete'},
+        );
+    };
+
+    getDirectMessageExceptions = () => {
+        return this.doFetch<DirectMessageException[]>(
+            `${this.getDirectMessageExceptionsRoute()}`,
+            {method: 'get'},
+        );
+    };
+
+    addDirectMessageException = (userId1: string, userId2: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getDirectMessageExceptionsRoute()}/${userId1}/${userId2}`,
+            {method: 'post'},
+        );
+    };
+
+    removeDirectMessageException = (userId1: string, userId2: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getDirectMessageExceptionsRoute()}/${userId1}/${userId2}`,
+            {method: 'delete'},
+        );
+    };
+
+    getMyDirectMessageExceptionPartners = () => {
+        return this.doFetch<string[]>(
+            `${this.getUsersRoute()}/me/direct_message_exceptions`,
+            {method: 'get'},
+        );
+    };
+
+    getGloballyDiscoverableUsers = () => {
+        return this.doFetch<string[]>(
+            `${this.getGloballyDiscoverableUsersRoute()}`,
+            {method: 'get'},
+        );
+    };
+
+    addGloballyDiscoverableUser = (userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getGloballyDiscoverableUsersRoute()}/${userId}`,
+            {method: 'post'},
+        );
+    };
+
+    removeGloballyDiscoverableUser = (userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getGloballyDiscoverableUsersRoute()}/${userId}`,
+            {method: 'delete'},
+        );
+    };
+
+    getPanicButtonOnlyUsers = () => {
+        return this.doFetch<string[]>(
+            `${this.getPanicButtonOnlyUsersRoute()}`,
+            {method: 'get'},
+        );
+    };
+
+    addPanicButtonOnlyUser = (userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getPanicButtonOnlyUsersRoute()}/${userId}`,
+            {method: 'post'},
+        );
+    };
+
+    removePanicButtonOnlyUser = (userId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getPanicButtonOnlyUsersRoute()}/${userId}`,
+            {method: 'delete'},
+        );
+    };
+
+    createTeamMember = (teamId: string, user: UserProfile, options?: {sendCredentials?: boolean}) => {
+        const query = options?.sendCredentials ? '?send_credentials=true' : '';
+        return this.doFetch<UserProfile>(
+            `${this.getTeamRoute(teamId)}/create_member${query}`,
+            {method: 'post', body: JSON.stringify(user)},
+        );
+    };
+
+    answerWelcomeFaq = (optionId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getBaseRoute()}/welcome_faq/answer`,
+            {method: 'post', body: JSON.stringify({option_id: optionId})},
         );
     };
 

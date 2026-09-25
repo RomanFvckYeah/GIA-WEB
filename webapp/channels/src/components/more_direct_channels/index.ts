@@ -11,10 +11,15 @@ import {searchGroupChannels} from 'mattermost-redux/actions/channels';
 import {
     getProfiles,
     getProfilesInTeam,
+    getProfilesByIds,
     getTotalUsersStats,
     searchProfiles,
     canUserDirectMessage,
 } from 'mattermost-redux/actions/users';
+import {
+    getMyDirectMessageExceptionPartners,
+    getGloballyDiscoverableUsers,
+} from 'mattermost-redux/actions/direct_message_exceptions';
 import {getConfig, getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
 import {getCurrentTeam} from 'mattermost-redux/selectors/entities/teams';
 import {
@@ -105,6 +110,9 @@ function mapDispatchToProps(dispatch: Dispatch) {
             searchGroupChannels,
             setModalSearchTerm,
             canUserDirectMessage,
+            getProfilesByIds,
+            getMyDirectMessageExceptionPartners,
+            getGloballyDiscoverableUsers,
         }, dispatch),
     };
 }

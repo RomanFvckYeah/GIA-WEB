@@ -11,11 +11,13 @@ import type {SchedulingInfo} from '@mattermost/types/schedule_post';
 
 import {savePreferences} from 'mattermost-redux/actions/preferences';
 import {Permissions} from 'mattermost-redux/constants';
-import {getChannel, makeGetChannel, getDirectChannel} from 'mattermost-redux/selectors/entities/channels';
+import {getChannel, makeGetChannel, getDirectChannel, getMyChannelMember} from 'mattermost-redux/selectors/entities/channels';
 import {getConfig, getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
 import {get, getBool, getInt} from 'mattermost-redux/selectors/entities/preferences';
 import {haveIChannelPermission} from 'mattermost-redux/selectors/entities/roles';
-import {getCurrentUserId, isCurrentUserGuestUser, getStatusForUserId, makeGetDisplayName} from 'mattermost-redux/selectors/entities/users';
+import {getTeamMember} from 'mattermost-redux/selectors/entities/teams';
+import {getCurrentUserId, isCurrentUserGuestUser, isCurrentUserSystemAdmin, getStatusForUserId, makeGetDisplayName} from 'mattermost-redux/selectors/entities/users';
+import {isTeamAdmin, isChannelAdmin} from 'mattermost-redux/utils/user_utils';
 
 import * as GlobalActions from 'actions/global_actions';
 import type {CreatePostOptions} from 'actions/post_actions';
@@ -186,7 +188,24 @@ const AdvancedTextEditor = ({
 
     const canPost = useSelector((state: GlobalState) => {
         const channel = getChannel(state, channelId);
-        return channel ? haveIChannelPermission(state, channel.team_id, channel.id, Permissions.CREATE_POST) : false;
+        if (!channel) {
+            return false;
+        }
+        if (!haveIChannelPermission(state, channel.team_id, channel.id, Permissions.CREATE_POST)) {
+            return false;
+        }
+        if (!channel.read_only) {
+            return true;
+        }
+        if (isCurrentUserSystemAdmin(state)) {
+            return true;
+        }
+        const teamMember = getTeamMember(state, channel.team_id, getCurrentUserId(state));
+        if (teamMember && isTeamAdmin(teamMember.roles || '')) {
+            return true;
+        }
+        const channelMember = getMyChannelMember(state, channel.id);
+        return Boolean(channelMember) && (isChannelAdmin(channelMember!.roles || '') || Boolean(channelMember!.scheme_admin));
     });
     const useChannelMentions = useSelector((state: GlobalState) => {
         const channel = getChannel(state, channelId);

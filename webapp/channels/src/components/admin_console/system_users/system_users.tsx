@@ -28,6 +28,8 @@ import {SystemUsersDateRangeMenu} from './system_users_date_range_menu';
 import {SystemUsersExport} from './system_users_export';
 import {SystemUsersFilterPopover} from './system_users_filters_popover';
 import {SystemUsersListAction} from './system_users_list_actions';
+import {SystemUsersNoTeamSection} from './system_users_no_team_section';
+import {SystemUsersPanicOnlySection} from './system_users_panic_only_section';
 import {SystemUsersSearch} from './system_users_search';
 import {getSortableColumnValueBySortColumn, getPaginationInfo, convertTableOptionsToUserReportOptions} from './utils';
 
@@ -520,6 +522,8 @@ function SystemUsers(props: Props) {
                     <AdminConsoleListTable<UserReport>
                         table={table}
                     />
+                    <SystemUsersPanicOnlySection/>
+                    <SystemUsersNoTeamSection/>
                 </div>
             </div>
         </div>

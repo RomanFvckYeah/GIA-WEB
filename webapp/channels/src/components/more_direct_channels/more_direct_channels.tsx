@@ -10,6 +10,7 @@ import type {Channel} from '@mattermost/types/channels';
 import type {UserProfile} from '@mattermost/types/users';
 
 import type {ActionResult} from 'mattermost-redux/types/actions';
+import {filterProfilesStartingWithTerm} from 'mattermost-redux/utils/user_utils';
 
 import type MultiSelect from 'components/multiselect/multiselect';
 
@@ -59,6 +60,9 @@ export type Props = {
         searchGroupChannels: (term: string) => Promise<ActionResult<Channel[]>>;
         setModalSearchTerm: (term: string) => void;
         canUserDirectMessage: (userId: string, otherUserId: string) => Promise<ActionResult<{can_dm: boolean}>>;
+        getProfilesByIds: (userIds: string[]) => Promise<ActionResult<UserProfile[]>>;
+        getMyDirectMessageExceptionPartners: () => Promise<ActionResult<string[]>>;
+        getGloballyDiscoverableUsers: () => Promise<ActionResult<string[]>>;
     };
     focusOriginElement: string;
 }
@@ -70,6 +74,7 @@ type State = {
     saving: boolean;
     loadingUsers: boolean;
     directMessageCapabilityCache: Record<string, boolean>;
+    crossTeamCandidates: UserProfile[];
 }
 
 export default class MoreDirectChannels extends React.PureComponent<Props, State> {
@@ -103,6 +108,7 @@ export default class MoreDirectChannels extends React.PureComponent<Props, State
             saving: false,
             loadingUsers: true,
             directMessageCapabilityCache: {},
+            crossTeamCandidates: [],
         };
     }
 
@@ -111,6 +117,33 @@ export default class MoreDirectChannels extends React.PureComponent<Props, State
         this.props.actions.getTotalUsersStats();
         this.props.actions.loadProfilesMissingStatus(this.props.users);
         this.checkDMCapabilities(this.props.users);
+        this.loadCrossTeamCandidates();
+    };
+
+    // Users who may not share a team with the current user but are still allowed to
+    // show up here: either they're a manually-approved cross-team DM exception partner,
+    // or a system_admin has marked them globally discoverable. Fetched once per modal
+    // open (not per keystroke) and filtered locally as the user types.
+    loadCrossTeamCandidates = async () => {
+        if (this.props.restrictDirectMessage === 'any') {
+            return;
+        }
+
+        const [{data: partnerIds}, {data: discoverableIds}] = await Promise.all([
+            this.props.actions.getMyDirectMessageExceptionPartners(),
+            this.props.actions.getGloballyDiscoverableUsers(),
+        ]);
+
+        const ids = Array.from(new Set([...(partnerIds || []), ...(discoverableIds || [])])).
+            filter((id) => id !== this.props.currentUserId);
+
+        if (ids.length === 0) {
+            this.setState({crossTeamCandidates: []});
+            return;
+        }
+
+        const {data: profiles} = await this.props.actions.getProfilesByIds(ids);
+        this.setState({crossTeamCandidates: profiles || []});
     };
 
     checkDMCapabilities = async (users: UserProfile[]) => {
@@ -294,10 +327,10 @@ export default class MoreDirectChannels extends React.PureComponent<Props, State
     };
 
     getDirectMessageableUsers = (): UserProfile[] => {
-        const {users} = this.props;
-        const {directMessageCapabilityCache} = this.state;
+        const {users, searchTerm, restrictDirectMessage} = this.props;
+        const {directMessageCapabilityCache, crossTeamCandidates} = this.state;
 
-        return users.filter((user) => {
+        const baseUsers = users.filter((user) => {
             // For remote users, check if they can be DMed
             if (user.remote_id) {
                 // If we haven't checked this user yet, hide them until we have the result
@@ -312,6 +345,16 @@ export default class MoreDirectChannels extends React.PureComponent<Props, State
             // Show local users (including self)
             return true;
         });
+
+        if (!searchTerm || restrictDirectMessage === 'any' || crossTeamCandidates.length === 0) {
+            return baseUsers;
+        }
+
+        const existingIds = new Set(baseUsers.map((user) => user.id));
+        const matchingCandidates = filterProfilesStartingWithTerm(crossTeamCandidates, searchTerm).
+            filter((user) => !existingIds.has(user.id));
+
+        return [...baseUsers, ...matchingCandidates];
     };
 
     render() {

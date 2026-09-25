@@ -104,6 +104,7 @@ type Channel struct {
 	PolicyIsActive      bool               `json:"policy_is_active"`
 	DefaultCategoryName string             `json:"default_category_name"`
 	ManagedCategoryName string             `json:"managed_category_name"`
+	ReadOnly            bool               `json:"read_only"`
 }
 
 func (o *Channel) Auditable() map[string]any {
@@ -127,6 +128,7 @@ func (o *Channel) Auditable() map[string]any {
 		"policy_enforced":      o.PolicyEnforced,
 		"autotranslation":      o.AutoTranslation,
 		"policy_is_active":     o.PolicyIsActive, // this field is only for logging purposes
+		"read_only":            o.ReadOnly,
 	}
 }
 
@@ -155,6 +157,7 @@ type ChannelPatch struct {
 	BannerInfo          *ChannelBannerInfo `json:"banner_info"`
 	AutoTranslation     *bool              `json:"autotranslation"`
 	ManagedCategoryName *string            `json:"managed_category_name"`
+	ReadOnly            *bool              `json:"read_only"`
 }
 
 func (c *ChannelPatch) Auditable() map[string]any {
@@ -415,6 +418,10 @@ func (o *Channel) Patch(patch *ChannelPatch) {
 	if patch.AutoTranslation != nil {
 		o.AutoTranslation = *patch.AutoTranslation
 	}
+
+	if patch.ReadOnly != nil {
+		o.ReadOnly = *patch.ReadOnly
+	}
 }
 
 func (o *Channel) MakeNonNil() {
@@ -431,6 +438,10 @@ func (o *Channel) AddProp(key string, value any) {
 
 func (o *Channel) IsGroupConstrained() bool {
 	return o.GroupConstrained != nil && *o.GroupConstrained
+}
+
+func (o *Channel) IsReadOnly() bool {
+	return o.ReadOnly
 }
 
 func (o *Channel) IsShared() bool {

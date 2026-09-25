@@ -24,39 +24,41 @@ const (
 )
 
 type Team struct {
-	Id                  string  `json:"id"`
-	CreateAt            int64   `json:"create_at"`
-	UpdateAt            int64   `json:"update_at"`
-	DeleteAt            int64   `json:"delete_at"`
-	DisplayName         string  `json:"display_name"`
-	Name                string  `json:"name"`
-	Description         string  `json:"description"`
-	Email               string  `json:"email"`
-	Type                string  `json:"type"`
-	CompanyName         string  `json:"company_name"`
-	AllowedDomains      string  `json:"allowed_domains"`
-	InviteId            string  `json:"invite_id"`
-	AllowOpenInvite     bool    `json:"allow_open_invite"`
-	LastTeamIconUpdate  int64   `json:"last_team_icon_update,omitempty"`
-	SchemeId            *string `json:"scheme_id"`
-	GroupConstrained    *bool   `json:"group_constrained"`
-	PolicyID            *string `json:"policy_id"`
-	CloudLimitsArchived bool    `json:"cloud_limits_archived"`
+	Id                      string  `json:"id"`
+	CreateAt                int64   `json:"create_at"`
+	UpdateAt                int64   `json:"update_at"`
+	DeleteAt                int64   `json:"delete_at"`
+	DisplayName             string  `json:"display_name"`
+	Name                    string  `json:"name"`
+	Description             string  `json:"description"`
+	Email                   string  `json:"email"`
+	Type                    string  `json:"type"`
+	CompanyName             string  `json:"company_name"`
+	AllowedDomains          string  `json:"allowed_domains"`
+	InviteId                string  `json:"invite_id"`
+	AllowOpenInvite         bool    `json:"allow_open_invite"`
+	LastTeamIconUpdate      int64   `json:"last_team_icon_update,omitempty"`
+	SchemeId                *string `json:"scheme_id"`
+	GroupConstrained        *bool   `json:"group_constrained"`
+	PolicyID                *string `json:"policy_id"`
+	CloudLimitsArchived     bool    `json:"cloud_limits_archived"`
+	OrganizationMemberLimit int     `json:"organization_member_limit"`
 }
 
 func (o *Team) Auditable() map[string]any {
 	return map[string]any{
-		"id":                    o.Id,
-		"create_at":             o.CreateAt,
-		"update_at":             o.UpdateAt,
-		"delete_at":             o.DeleteAt,
-		"type":                  o.Type,
-		"invite_id":             o.InviteId,
-		"allow_open_invite":     o.AllowOpenInvite,
-		"scheme_id":             o.SchemeId,
-		"group_constrained":     o.GroupConstrained,
-		"policy_id":             o.PolicyID,
-		"cloud_limits_archived": o.CloudLimitsArchived,
+		"id":                        o.Id,
+		"create_at":                 o.CreateAt,
+		"update_at":                 o.UpdateAt,
+		"delete_at":                 o.DeleteAt,
+		"type":                      o.Type,
+		"invite_id":                 o.InviteId,
+		"allow_open_invite":         o.AllowOpenInvite,
+		"scheme_id":                 o.SchemeId,
+		"group_constrained":         o.GroupConstrained,
+		"policy_id":                 o.PolicyID,
+		"cloud_limits_archived":     o.CloudLimitsArchived,
+		"organization_member_limit": o.OrganizationMemberLimit,
 	}
 }
 
@@ -65,20 +67,22 @@ func (o *Team) LogClone() any {
 }
 
 type TeamPatch struct {
-	DisplayName         *string `json:"display_name"`
-	Description         *string `json:"description"`
-	CompanyName         *string `json:"company_name"`
-	AllowedDomains      *string `json:"allowed_domains"`
-	AllowOpenInvite     *bool   `json:"allow_open_invite"`
-	GroupConstrained    *bool   `json:"group_constrained"`
-	CloudLimitsArchived *bool   `json:"cloud_limits_archived"`
+	DisplayName             *string `json:"display_name"`
+	Description             *string `json:"description"`
+	CompanyName             *string `json:"company_name"`
+	AllowedDomains          *string `json:"allowed_domains"`
+	AllowOpenInvite         *bool   `json:"allow_open_invite"`
+	GroupConstrained        *bool   `json:"group_constrained"`
+	CloudLimitsArchived     *bool   `json:"cloud_limits_archived"`
+	OrganizationMemberLimit *int    `json:"organization_member_limit"`
 }
 
 func (o *TeamPatch) Auditable() map[string]any {
 	return map[string]any{
-		"allow_open_invite":     o.AllowOpenInvite,
-		"group_constrained":     o.GroupConstrained,
-		"cloud_limits_archived": o.CloudLimitsArchived,
+		"allow_open_invite":         o.AllowOpenInvite,
+		"group_constrained":         o.GroupConstrained,
+		"cloud_limits_archived":     o.CloudLimitsArchived,
+		"organization_member_limit": o.OrganizationMemberLimit,
 	}
 }
 
@@ -184,6 +188,10 @@ func (o *Team) PreSave() {
 	if o.InviteId == "" {
 		o.InviteId = NewId()
 	}
+
+	if o.OrganizationMemberLimit <= 0 {
+		o.OrganizationMemberLimit = 5
+	}
 }
 
 func (o *Team) PreUpdate() {
@@ -279,6 +287,10 @@ func (o *Team) Patch(patch *TeamPatch) {
 
 	if patch.CloudLimitsArchived != nil {
 		o.CloudLimitsArchived = *patch.CloudLimitsArchived
+	}
+
+	if patch.OrganizationMemberLimit != nil {
+		o.OrganizationMemberLimit = *patch.OrganizationMemberLimit
 	}
 }
 

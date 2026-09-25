@@ -360,6 +360,10 @@
     "translation": "A direct channel cannot be created between these users because they do not share a team in common."
   },
   {
+    "id": "api.direct_message_exception.self_pair.app_error",
+    "translation": "Cannot create a direct message exception between a user and themselves."
+  },
+  {
     "id": "api.channel.create_channel.max_channel_limit.app_error",
     "translation": "Unable to create more than {{.MaxChannelsPerTeam}} channels for current team."
   },
@@ -490,6 +494,10 @@
   {
     "id": "api.channel.patch_update_channel.no_changes.app_error",
     "translation": "No changes in the patch."
+  },
+  {
+    "id": "api.channel.patch_update_channel.read_only.channel_type.not_allowed",
+    "translation": "You are not allowed to set read_only on this channel type."
   },
   {
     "id": "api.channel.patch_update_channel.restricted_dm.app_error",
@@ -3599,6 +3607,10 @@
     "translation": "Guests are restricted from joining a team via an invite link. Please request a guest email invitation to the team."
   },
   {
+    "id": "api.team.create_member.organization_limit_reached.app_error",
+    "translation": "This team has reached its organization member limit. Ask a system administrator to raise it before creating more accounts."
+  },
+  {
     "id": "api.team.demote_user_to_guest.disabled.error",
     "translation": "Guest accounts are disabled."
   },
@@ -3847,6 +3859,54 @@
     "translation": "Unable to find the user."
   },
   {
+    "id": "api.templates.account_credentials_body.app_download_info",
+    "translation": "Available for iOS and Android."
+  },
+  {
+    "id": "api.templates.account_credentials_body.app_download_title",
+    "translation": "Get the mobile app"
+  },
+  {
+    "id": "api.templates.account_credentials_body.button",
+    "translation": "Sign in"
+  },
+  {
+    "id": "api.templates.account_credentials_body.download_android",
+    "translation": "Download for Android"
+  },
+  {
+    "id": "api.templates.account_credentials_body.download_ios",
+    "translation": "Download for iOS"
+  },
+  {
+    "id": "api.templates.account_credentials_body.info",
+    "translation": "An account was created for you on {{ .SiteName }}. Use these credentials to sign in:"
+  },
+  {
+    "id": "api.templates.account_credentials_body.info1",
+    "translation": "For your security, we recommend changing your password after signing in for the first time."
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_login",
+    "translation": "Username"
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_password",
+    "translation": "Password"
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_server",
+    "translation": "Server"
+  },
+  {
+    "id": "api.templates.account_credentials_body.title",
+    "translation": "Your account is ready"
+  },
+  {
+    "id": "api.templates.account_credentials_subject",
+    "translation": "[{{ .SiteName }}] Your account is ready"
+  },
+  {
     "id": "api.templates.cloud_welcome_email.add_apps_info",
     "translation": "Add apps to your workspace"
   },
@@ -3964,7 +4024,7 @@
   },
   {
     "id": "api.templates.email_footer_v2",
-    "translation": "© 2015 - {{ .CurrentYear }} Mattermost, Inc. 2100 Geng Road, Suite 210, Palo Alto, CA, 94303"
+    "translation": "© {{ .CurrentYear }} Okip · GIA - Guardián Inteligente"
   },
   {
     "id": "api.templates.email_info1",
@@ -9147,6 +9207,18 @@
   {
     "id": "app.webhooks.update_outgoing.app_error",
     "translation": "Unable to update the webhook."
+  },
+  {
+    "id": "app.welcome_bot.default_prompt",
+    "translation": "What would you like to know?"
+  },
+  {
+    "id": "app.welcome_bot.invalid_option",
+    "translation": "That option is no longer available."
+  },
+  {
+    "id": "app.welcome_bot.no_match",
+    "translation": "I didn't quite get that. Pick one of the options below."
   },
   {
     "id": "basic_security_check.url.too_long_error",

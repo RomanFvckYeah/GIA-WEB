@@ -4,6 +4,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -984,6 +985,53 @@ func (s *Server) doAccessControlPolicyV0_3Migration(rctx request.CTX) error {
 	return nil
 }
 
+// doGiaSystemBotProfileImageMigration stamps the system bot's stored profile
+// image with the current default bot icon (the GIA "GA" mark) on servers where
+// the bot already exists. This is needed because Server.GetProfileImage persists
+// the then-current default to the filestore the first time any bot avatar is
+// viewed, so simply swapping the embedded bot_default_icon.png has no effect on
+// installs that predate the rebrand. Setting it here also bumps LastPictureUpdate,
+// which changes the avatar URL and busts client-side caches.
+func (s *Server) doGiaSystemBotProfileImageMigration(rctx request.CTX) error {
+	var nfErr *store.ErrNotFound
+	if _, err := s.Store().System().GetByName(model.MigrationKeyGiaSystemBotProfileImage); err == nil {
+		return nil
+	} else if !errors.As(err, &nfErr) {
+		return fmt.Errorf("could not query migration: %w", err)
+	}
+
+	a := New(ServerConnector(s.Channels()))
+
+	bot, appErr := a.GetSystemBot(rctx)
+	if appErr != nil {
+		// The system bot can only be created once a system admin exists. On a
+		// brand-new server still in setup there is none yet — skip without marking
+		// the migration complete so it runs again on the next start.
+		rctx.Logger().Warn("Skipping system bot profile image migration: system bot not available", mlog.Err(appErr))
+		return nil
+	}
+
+	img, appErr := a.GetDefaultProfileImage(&model.User{IsBot: true})
+	if appErr != nil {
+		return fmt.Errorf("failed to load default bot image: %w", appErr)
+	}
+
+	// SetProfileImageFromFile is a no-op when the stored image already matches.
+	if appErr := a.SetProfileImageFromFile(rctx, bot.UserId, bytes.NewReader(img)); appErr != nil {
+		return fmt.Errorf("failed to set system bot profile image: %w", appErr)
+	}
+
+	system := model.System{
+		Name:  model.MigrationKeyGiaSystemBotProfileImage,
+		Value: "true",
+	}
+	if err := s.Store().System().SaveOrUpdate(&system); err != nil {
+		return fmt.Errorf("failed to mark system bot profile image migration as completed: %w", err)
+	}
+
+	return nil
+}
+
 func (a *App) DoAppMigrations() {
 	a.Srv().doAppMigrations()
 }
@@ -1031,6 +1079,7 @@ func (s *Server) doAppMigrations() {
 		{"Delete Orphan Drafts Migration", s.doDeleteOrphanDraftsMigration},
 		{"Delete Invalid Dms Preferences Migration", s.doDeleteDmsPreferencesMigration},
 		{"Access Control Policy V0.3 Migration", s.doAccessControlPolicyV0_3Migration},
+		{"GIA System Bot Profile Image Migration", s.doGiaSystemBotProfileImageMigration},
 	}
 
 	rctx := request.EmptyContext(s.Log())

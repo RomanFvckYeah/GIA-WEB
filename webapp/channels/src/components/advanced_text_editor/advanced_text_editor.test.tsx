@@ -610,4 +610,99 @@ describe('components/avanced_text_editor/advanced_text_editor', () => {
             expect(textbox.selectionEnd).toEqual(textbox.selectionEnd);
         });
     });
+
+    describe('read-only channel', () => {
+        const readOnlyChannelState = mergeObjects(initialState, {
+            entities: {
+                channels: {
+                    channels: {
+                        current_channel_id: TestHelper.getChannelMock({
+                            id: 'current_channel_id',
+                            team_id: 'current_team_id',
+                            display_name: 'Test Channel',
+                            read_only: true,
+                        }),
+                    },
+                },
+            },
+        });
+
+        const readOnlyMessage = 'This channel is read-only. Only members with permission can post here.';
+
+        it('should block a regular member from posting', () => {
+            renderWithContext(
+                <AdvancedTextEditor {...baseProps}/>,
+                readOnlyChannelState,
+            );
+
+            expect(screen.getByPlaceholderText(readOnlyMessage)).toBeDisabled();
+        });
+
+        it('should allow a channel admin to post', () => {
+            const testState = mergeObjects(readOnlyChannelState, {
+                entities: {
+                    channels: {
+                        myMembers: {
+                            current_channel_id: TestHelper.getChannelMembershipMock({
+                                channel_id: channelId,
+                                user_id: currentUserId,
+                                roles: 'channel_roles',
+                                scheme_admin: true,
+                            }),
+                        },
+                    },
+                },
+            });
+
+            renderWithContext(
+                <AdvancedTextEditor {...baseProps}/>,
+                testState,
+            );
+
+            expect(screen.getByPlaceholderText('Write to Test Channel')).not.toBeDisabled();
+        });
+
+        it('should allow a team admin to post', () => {
+            const testState = mergeObjects(readOnlyChannelState, {
+                entities: {
+                    teams: {
+                        membersInTeam: {
+                            current_team_id: {
+                                current_user_id: TestHelper.getTeamMembershipMock({roles: 'team_roles team_admin'}),
+                            },
+                        },
+                    },
+                },
+            });
+
+            renderWithContext(
+                <AdvancedTextEditor {...baseProps}/>,
+                testState,
+            );
+
+            expect(screen.getByPlaceholderText('Write to Test Channel')).not.toBeDisabled();
+        });
+
+        it('should allow a system admin to post', () => {
+            const testState = mergeObjects(readOnlyChannelState, {
+                entities: {
+                    users: {
+                        profiles: {
+                            current_user_id: TestHelper.getUserMock({
+                                id: 'current_user_id',
+                                roles: 'user_roles system_admin',
+                            }),
+                        },
+                    },
+                },
+            });
+
+            renderWithContext(
+                <AdvancedTextEditor {...baseProps}/>,
+                testState,
+            );
+
+            expect(screen.getByPlaceholderText('Write to Test Channel')).not.toBeDisabled();
+        });
+    });
 });

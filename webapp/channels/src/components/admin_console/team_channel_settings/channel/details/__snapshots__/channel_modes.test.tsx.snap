@@ -83,6 +83,47 @@ exports[`admin_console/team_channel_settings/channel/ChannelModes should match s
             />
           </div>
         </div>
+        <div>
+          <div
+            class="line-switch d-flex flex-sm-column flex-md-row align-items-sm-start align-items-center"
+          >
+            <label
+              class="line-switch__label"
+            >
+              Read-only channel
+            </label>
+            <div
+              class="line-switch__toggle"
+              data-testid="read-only-toggle"
+            >
+              <button
+                aria-pressed="false"
+                class="btn btn-lg btn-toggle"
+                data-testid="read-only-toggle-button"
+                id="read-only-toggle"
+                tabindex="0"
+                type="button"
+              >
+                <div
+                  class="handle"
+                />
+              </button>
+            </div>
+          </div>
+          <div
+            class="row"
+          >
+            <div
+              class="col-sm-10"
+            >
+              <div
+                class="help-text-small help-text-no-padding "
+              >
+                When enabled, only the channel admins of this channel, the team admins of this team, and system admins can post messages. All other members can still read the channel.
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -226,6 +267,47 @@ exports[`admin_console/team_channel_settings/channel/ChannelModes should match s
             <hr
               class="separator__hr"
             />
+          </div>
+        </div>
+        <div>
+          <div
+            class="line-switch d-flex flex-sm-column flex-md-row align-items-sm-start align-items-center"
+          >
+            <label
+              class="line-switch__label"
+            >
+              Read-only channel
+            </label>
+            <div
+              class="line-switch__toggle"
+              data-testid="read-only-toggle"
+            >
+              <button
+                aria-pressed="false"
+                class="btn btn-lg btn-toggle"
+                data-testid="read-only-toggle-button"
+                id="read-only-toggle"
+                tabindex="0"
+                type="button"
+              >
+                <div
+                  class="handle"
+                />
+              </button>
+            </div>
+          </div>
+          <div
+            class="row"
+          >
+            <div
+              class="col-sm-10"
+            >
+              <div
+                class="help-text-small help-text-no-padding "
+              >
+                When enabled, only the channel admins of this channel, the team admins of this team, and system admins can post messages. All other members can still read the channel.
+              </div>
+            </div>
           </div>
         </div>
       </div>

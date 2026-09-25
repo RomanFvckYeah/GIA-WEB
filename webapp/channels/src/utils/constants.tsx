@@ -751,6 +751,7 @@ export const PostTypes = {
     CUSTOM_DATA_SPILLAGE_REPORT: 'custom_spillage_report',
     AUTO_TRANSLATION_CHANGE: 'system_autotranslation',
     BURN_ON_READ: 'burn_on_read',
+    CUSTOM_GIA_WELCOME_MENU: 'custom_gia_welcome_menu',
 };
 
 export const StatTypes = keyMirror({
@@ -815,7 +816,6 @@ export const StoragePrefixes = {
 };
 
 export const LandingPreferenceTypes = {
-    MATTERMOSTAPP: 'mattermostapp',
     BROWSER: 'browser',
 };
 
@@ -1021,8 +1021,8 @@ export const DraggingStateTypes = {
 };
 
 export const AboutLinks = {
-    TERMS_OF_SERVICE: 'https://mattermost.com/pl/terms-of-use/',
-    PRIVACY_POLICY: 'https://mattermost.com/pl/privacy-policy/',
+    TERMS_OF_SERVICE: 'https://terminos-y-condiciones-gia.guardianinteligente.com/',
+    PRIVACY_POLICY: 'https://aviso-de-privacidad-gia.guardianinteligente.com/',
 };
 
 export const CloudLinks = {

@@ -770,6 +770,13 @@ func (a *App) AddUserToTeamByInviteId(rctx request.CTX, inviteId string, userID 
 }
 
 func (a *App) JoinUserToTeam(rctx request.CTX, team *model.Team, user *model.User, userRequestorId string) (*model.TeamMember, *model.AppError) {
+	// A panic-button-only account must never become a member of any team — this is the single
+	// choke point every production path (invites, tokens, AddTeamMember, team creation, etc.)
+	// funnels through before a TeamMember row is saved, so guarding here covers all of them.
+	if a.IsPanicButtonOnly(rctx, user.Id) {
+		return nil, model.NewAppError("JoinUserToTeam", "app.team.join_user_to_team.panic_button_only.app_error", nil, "", http.StatusForbidden)
+	}
+
 	preSaveHook := func(tm *model.TeamMember) (*model.TeamMember, error) {
 		var rejectionReason string
 		pluginContext := pluginContext(rctx)

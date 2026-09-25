@@ -36,14 +36,6 @@ exports[`components/user_settings/notifications/send_test_notification_notice sh
             >
               Send a test notification
             </button>
-            <button
-              class="btn btn-sm sectionNoticeButton btn-tertiary"
-            >
-              Troubleshooting docs
-              <i
-                class="icon icon-open-in-new"
-              />
-            </button>
           </div>
         </div>
       </div>

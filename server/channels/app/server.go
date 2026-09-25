@@ -113,6 +113,7 @@ type Server struct {
 	PushNotificationsHub   PushNotificationsHub
 	pushNotificationClient *http.Client // TODO: move this to it's own package
 	outgoingWebhookClient  *http.Client
+	coviaClient            *http.Client
 
 	runEssentialJobs bool
 	Jobs             *jobs.JobServer
@@ -346,6 +347,7 @@ func NewServer(options ...Option) (*Server, error) {
 
 	s.pushNotificationClient = s.httpService.MakeClient(true)
 	s.outgoingWebhookClient = s.httpService.MakeClient(false)
+	s.coviaClient = s.httpService.MakeClient(true)
 
 	if err2 := utils.TranslationsPreInit(); err2 != nil {
 		return nil, errors.Wrapf(err2, "unable to load Mattermost translation files")

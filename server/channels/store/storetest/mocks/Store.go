@@ -327,6 +327,26 @@ func (_m *Store) DesktopTokens() store.DesktopTokensStore {
 	return r0
 }
 
+// DirectMessageException provides a mock function with no fields
+func (_m *Store) DirectMessageException() store.DirectMessageExceptionStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for DirectMessageException")
+	}
+
+	var r0 store.DirectMessageExceptionStore
+	if rf, ok := ret.Get(0).(func() store.DirectMessageExceptionStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.DirectMessageExceptionStore)
+		}
+	}
+
+	return r0
+}
+
 // Draft provides a mock function with no fields
 func (_m *Store) Draft() store.DraftStore {
 	ret := _m.Called()
@@ -576,6 +596,26 @@ func (_m *Store) GetSchemaDefinition() (*model.SupportPacketDatabaseSchema, erro
 	return r0, r1
 }
 
+// GloballyDiscoverableUser provides a mock function with no fields
+func (_m *Store) GloballyDiscoverableUser() store.GloballyDiscoverableUserStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GloballyDiscoverableUser")
+	}
+
+	var r0 store.GloballyDiscoverableUserStore
+	if rf, ok := ret.Get(0).(func() store.GloballyDiscoverableUserStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.GloballyDiscoverableUserStore)
+		}
+	}
+
+	return r0
+}
+
 // Group provides a mock function with no fields
 func (_m *Store) Group() store.GroupStore {
 	ret := _m.Called()
@@ -726,6 +766,26 @@ func (_m *Store) OAuth() store.OAuthStore {
 	return r0
 }
 
+// OperationalTrackingGroup provides a mock function with no fields
+func (_m *Store) OperationalTrackingGroup() store.OperationalTrackingGroupStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for OperationalTrackingGroup")
+	}
+
+	var r0 store.OperationalTrackingGroupStore
+	if rf, ok := ret.Get(0).(func() store.OperationalTrackingGroupStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.OperationalTrackingGroupStore)
+		}
+	}
+
+	return r0
+}
+
 // OutgoingOAuthConnection provides a mock function with no fields
 func (_m *Store) OutgoingOAuthConnection() store.OutgoingOAuthConnectionStore {
 	ret := _m.Called()
@@ -740,6 +800,26 @@ func (_m *Store) OutgoingOAuthConnection() store.OutgoingOAuthConnectionStore {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.OutgoingOAuthConnectionStore)
+		}
+	}
+
+	return r0
+}
+
+// PanicButtonOnlyUser provides a mock function with no fields
+func (_m *Store) PanicButtonOnlyUser() store.PanicButtonOnlyUserStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for PanicButtonOnlyUser")
+	}
+
+	var r0 store.PanicButtonOnlyUserStore
+	if rf, ok := ret.Get(0).(func() store.PanicButtonOnlyUserStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.PanicButtonOnlyUserStore)
 		}
 	}
 
@@ -1241,6 +1321,26 @@ func (_m *Store) Team() store.TeamStore {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.TeamStore)
+		}
+	}
+
+	return r0
+}
+
+// TeamOrganizationMember provides a mock function with no fields
+func (_m *Store) TeamOrganizationMember() store.TeamOrganizationMemberStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for TeamOrganizationMember")
+	}
+
+	var r0 store.TeamOrganizationMemberStore
+	if rf, ok := ret.Get(0).(func() store.TeamOrganizationMemberStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.TeamOrganizationMemberStore)
 		}
 	}
 

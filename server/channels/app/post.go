@@ -682,6 +682,12 @@ func (a *App) handlePostEvents(rctx request.CTX, post *model.Post, user *model.U
 				rctx.Logger().Error("Failed to send auto response", mlog.String("user_id", user.Id), mlog.String("post_id", post.Id), mlog.Err(err))
 			}
 		})
+
+		a.Srv().Go(func() {
+			if err := a.HandleWelcomeBotReply(rctx, channel, user, post); err != nil {
+				rctx.Logger().Warn("Failed to handle welcome bot reply", mlog.String("user_id", user.Id), mlog.String("post_id", post.Id), mlog.Err(err))
+			}
+		})
 	}
 
 	if triggerWebhooks && post.Type != model.PostTypeBurnOnRead {

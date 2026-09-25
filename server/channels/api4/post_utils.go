@@ -11,19 +11,42 @@ import (
 
 func userCreatePostPermissionCheckWithContext(c *Context, channelId string) {
 	hasPermission := false
+	channel, chanErr := c.App.GetChannel(c.AppContext, channelId)
+
 	if ok, _ := c.App.SessionHasPermissionToChannel(c.AppContext, *c.AppContext.Session(), channelId, model.PermissionCreatePost); ok {
 		hasPermission = true
-	} else if channel, err := c.App.GetChannel(c.AppContext, channelId); err == nil {
+	} else if chanErr == nil {
 		// Temporary permission check method until advanced permissions, please do not copy
 		if channel.Type == model.ChannelTypeOpen && c.App.SessionHasPermissionToTeam(*c.AppContext.Session(), channel.TeamId, model.PermissionCreatePostPublic) {
 			hasPermission = true
 		}
 	}
 
+	if hasPermission && chanErr == nil && channel.IsReadOnly() && !canPostInReadOnlyChannel(c, channel) {
+		hasPermission = false
+	}
+
 	if !hasPermission {
 		c.SetPermissionError(model.PermissionCreatePost)
 		return
 	}
+}
+
+// canPostInReadOnlyChannel allows posting in a read-only channel to the channel's channel_admins,
+// the team's team_admins, and system_admins only.
+func canPostInReadOnlyChannel(c *Context, channel *model.Channel) bool {
+	session := *c.AppContext.Session()
+	if c.App.SessionHasPermissionTo(session, model.PermissionManageSystem) {
+		return true
+	}
+	if c.App.SessionHasPermissionToTeam(session, channel.TeamId, model.PermissionManageTeam) {
+		return true
+	}
+	member, err := c.App.GetChannelMember(c.AppContext, channel.Id, session.UserId)
+	if err != nil {
+		return false
+	}
+	return member.SchemeAdmin
 }
 
 func postHardenedModeCheckWithContext(where string, c *Context, props model.StringInterface) {

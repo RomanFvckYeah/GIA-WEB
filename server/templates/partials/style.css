@@ -101,6 +101,37 @@
   padding: 8px 24px 8px 24px !important;
 }
 
+.credIntro div {
+  font-size: 15px !important;
+  line-height: 22px !important;
+  color: #3F4350 !important;
+}
+
+.credLabel div {
+  text-align: left !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  color: rgba(63, 67, 80, 0.75) !important;
+}
+
+.credValue div {
+  text-align: left !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  line-height: 22px !important;
+  color: #1C2135 !important;
+  word-break: break-all !important;
+}
+
+.credNote div {
+  font-size: 13px !important;
+  line-height: 20px !important;
+  color: rgba(63, 67, 80, 0.75) !important;
+}
+
 .postCard {
   padding: 0px 24px 40px 24px !important;
 }

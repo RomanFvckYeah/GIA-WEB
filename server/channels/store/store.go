@@ -102,6 +102,11 @@ type Store interface {
 	Recap() RecapStore
 	ReadReceipt() ReadReceiptStore
 	TemporaryPost() TemporaryPostStore
+	TeamOrganizationMember() TeamOrganizationMemberStore
+	DirectMessageException() DirectMessageExceptionStore
+	GloballyDiscoverableUser() GloballyDiscoverableUserStore
+	PanicButtonOnlyUser() PanicButtonOnlyUserStore
+	OperationalTrackingGroup() OperationalTrackingGroupStore
 }
 
 type RetentionPolicyStore interface {
@@ -1229,6 +1234,47 @@ type ReadReceiptStore interface {
 	GetByPost(rctx request.CTX, postID string) ([]*model.ReadReceipt, error)
 	GetReadCountForPost(rctx request.CTX, postID string) (int64, error)
 	GetUnreadCountForPost(rctx request.CTX, post *model.Post) (int64, error)
+}
+
+type TeamOrganizationMemberStore interface {
+	IsOrgMember(teamID, userID string) (bool, error)
+	Save(rctx request.CTX, teamID, userID, createdBy string) error
+	Delete(teamID, userID string) error
+	GetForTeam(teamID string) ([]string, error)
+	GetForUser(userID string) ([]string, error)
+}
+
+type OperationalTrackingGroupStore interface {
+	Save(rctx request.CTX, group *model.OperationalTrackingGroup) (*model.OperationalTrackingGroup, error)
+	Get(groupID string) (*model.OperationalTrackingGroup, error)
+	GetForTeam(teamID string) ([]*model.OperationalTrackingGroup, error)
+	Delete(groupID string) error
+	AddMember(rctx request.CTX, groupID, userID, createdBy string) error
+	RemoveMember(groupID, userID string) error
+	GetMembers(groupID string) ([]*model.OperationalTrackingGroupMember, error)
+	UpdateCoviaSyncStatus(groupID, status string) error
+}
+
+type DirectMessageExceptionStore interface {
+	IsException(userID1, userID2 string) (bool, error)
+	Save(rctx request.CTX, userID1, userID2, createdBy string) error
+	Delete(userID1, userID2 string) error
+	GetAll() ([]*model.DirectMessageException, error)
+	GetPartnersForUser(userID string) ([]string, error)
+}
+
+type GloballyDiscoverableUserStore interface {
+	IsDiscoverable(userID string) (bool, error)
+	Save(rctx request.CTX, userID, createdBy string) error
+	Delete(userID string) error
+	GetAll() ([]string, error)
+}
+
+type PanicButtonOnlyUserStore interface {
+	IsPanicButtonOnly(userID string) (bool, error)
+	Save(rctx request.CTX, userID, createdBy string) error
+	Delete(userID string) error
+	GetAll() ([]string, error)
 }
 
 type TemporaryPostStore interface {

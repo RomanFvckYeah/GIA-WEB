@@ -111,7 +111,7 @@ const HeaderFooterNotLoggedIn = (props: Props) => {
                             id='company_name'
                             className='pull-right footer-site-name'
                         >
-                            {'Mattermost'}
+                            {'GIA'}
                         </span>
                     </div>
                     <div className='col-xs-12'>
@@ -119,7 +119,7 @@ const HeaderFooterNotLoggedIn = (props: Props) => {
                             id='copyright'
                             className='pull-right footer-link copyright'
                         >
-                            {`© 2015-${new Date().getFullYear()} Mattermost, Inc.`}
+                            {`© 2015-${new Date().getFullYear()} Okip, Inc.`}
                         </span>
                         <span className='pull-right'>
                             {content}

@@ -20,6 +20,7 @@ const state: GlobalState = {
             firstAdminCompleteSetup: false,
             customProfileAttributes: {},
             cwsAvailability: 'pending',
+            panicButtonOnly: false,
         },
         users: {
             currentUserId: '',

@@ -2272,3 +2272,51 @@ func TestSessionHasPermissionToManagePropertyFieldOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionHasPermissionToOrgMemberViaTeamAdmin(t *testing.T) {
+	th := Setup(t).InitBasic(t)
+
+	team := th.CreateTeam(t)
+	targetUser := th.CreateUser(t)
+
+	teamAdminSession := model.Session{
+		UserId: th.BasicUser.Id,
+		Roles:  model.SystemUserRoleId,
+		TeamMembers: []*model.TeamMember{
+			{TeamId: team.Id, Roles: model.TeamAdminRoleId},
+		},
+	}
+
+	t.Run("false when target is not an org member of any team the caller manages", func(t *testing.T) {
+		require.False(t, th.App.SessionHasPermissionToOrgMemberViaTeamAdmin(th.Context, teamAdminSession, targetUser.Id))
+	})
+
+	t.Run("true once target is marked an org member of a team the caller manages, even with no real TeamMember row for the target", func(t *testing.T) {
+		appErr := th.App.AddUserToTeamOrganization(th.Context, team.Id, targetUser.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		defer func() {
+			appErr := th.App.RemoveUserFromTeamOrganization(th.Context, team.Id, targetUser.Id)
+			require.Nil(t, appErr)
+		}()
+
+		require.True(t, th.App.SessionHasPermissionToOrgMemberViaTeamAdmin(th.Context, teamAdminSession, targetUser.Id))
+	})
+
+	t.Run("false without PermissionManageTeam even if target is an org member", func(t *testing.T) {
+		appErr := th.App.AddUserToTeamOrganization(th.Context, team.Id, targetUser.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		defer func() {
+			appErr := th.App.RemoveUserFromTeamOrganization(th.Context, team.Id, targetUser.Id)
+			require.Nil(t, appErr)
+		}()
+
+		regularMemberSession := model.Session{
+			UserId: th.BasicUser.Id,
+			Roles:  model.SystemUserRoleId,
+			TeamMembers: []*model.TeamMember{
+				{TeamId: team.Id, Roles: model.TeamUserRoleId},
+			},
+		}
+		require.False(t, th.App.SessionHasPermissionToOrgMemberViaTeamAdmin(th.Context, regularMemberSession, targetUser.Id))
+	})
+}

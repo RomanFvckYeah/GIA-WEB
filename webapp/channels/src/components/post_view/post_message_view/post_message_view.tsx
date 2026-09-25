@@ -16,6 +16,7 @@ import store from 'stores/redux_store';
 import PostMarkdown from 'components/post_markdown';
 import ShowMore from 'components/post_view/show_more';
 import type {AttachmentTextOverflowType} from 'components/post_view/show_more/show_more';
+import WelcomeFaqMenu from 'components/post_view/welcome_faq_menu';
 
 import Pluggable from 'plugins/pluggable';
 import {PostTypes} from 'utils/constants';
@@ -131,6 +132,10 @@ export default class PostMessageView extends React.PureComponent<Props, State> {
         }
 
         const postType = typeof post.props?.type === 'string' ? post.props.type : post.type;
+
+        if (postType === PostTypes.CUSTOM_GIA_WELCOME_MENU) {
+            return <WelcomeFaqMenu post={post}/>;
+        }
 
         if (pluginPostTypes && Object.hasOwn(pluginPostTypes, postType)) {
             const PluginComponent = pluginPostTypes[postType].component;

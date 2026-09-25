@@ -33,16 +33,20 @@ type TimerLayer struct {
 	ComplianceStore                 store.ComplianceStore
 	ContentFlaggingStore            store.ContentFlaggingStore
 	DesktopTokensStore              store.DesktopTokensStore
+	DirectMessageExceptionStore     store.DirectMessageExceptionStore
 	DraftStore                      store.DraftStore
 	EmojiStore                      store.EmojiStore
 	FileInfoStore                   store.FileInfoStore
+	GloballyDiscoverableUserStore   store.GloballyDiscoverableUserStore
 	GroupStore                      store.GroupStore
 	JobStore                        store.JobStore
 	LicenseStore                    store.LicenseStore
 	LinkMetadataStore               store.LinkMetadataStore
 	NotifyAdminStore                store.NotifyAdminStore
 	OAuthStore                      store.OAuthStore
+	OperationalTrackingGroupStore   store.OperationalTrackingGroupStore
 	OutgoingOAuthConnectionStore    store.OutgoingOAuthConnectionStore
+	PanicButtonOnlyUserStore        store.PanicButtonOnlyUserStore
 	PluginStore                     store.PluginStore
 	PostStore                       store.PostStore
 	PostAcknowledgementStore        store.PostAcknowledgementStore
@@ -66,6 +70,7 @@ type TimerLayer struct {
 	StatusStore                     store.StatusStore
 	SystemStore                     store.SystemStore
 	TeamStore                       store.TeamStore
+	TeamOrganizationMemberStore     store.TeamOrganizationMemberStore
 	TemporaryPostStore              store.TemporaryPostStore
 	TermsOfServiceStore             store.TermsOfServiceStore
 	ThreadStore                     store.ThreadStore
@@ -134,6 +139,10 @@ func (s *TimerLayer) DesktopTokens() store.DesktopTokensStore {
 	return s.DesktopTokensStore
 }
 
+func (s *TimerLayer) DirectMessageException() store.DirectMessageExceptionStore {
+	return s.DirectMessageExceptionStore
+}
+
 func (s *TimerLayer) Draft() store.DraftStore {
 	return s.DraftStore
 }
@@ -144,6 +153,10 @@ func (s *TimerLayer) Emoji() store.EmojiStore {
 
 func (s *TimerLayer) FileInfo() store.FileInfoStore {
 	return s.FileInfoStore
+}
+
+func (s *TimerLayer) GloballyDiscoverableUser() store.GloballyDiscoverableUserStore {
+	return s.GloballyDiscoverableUserStore
 }
 
 func (s *TimerLayer) Group() store.GroupStore {
@@ -170,8 +183,16 @@ func (s *TimerLayer) OAuth() store.OAuthStore {
 	return s.OAuthStore
 }
 
+func (s *TimerLayer) OperationalTrackingGroup() store.OperationalTrackingGroupStore {
+	return s.OperationalTrackingGroupStore
+}
+
 func (s *TimerLayer) OutgoingOAuthConnection() store.OutgoingOAuthConnectionStore {
 	return s.OutgoingOAuthConnectionStore
+}
+
+func (s *TimerLayer) PanicButtonOnlyUser() store.PanicButtonOnlyUserStore {
+	return s.PanicButtonOnlyUserStore
 }
 
 func (s *TimerLayer) Plugin() store.PluginStore {
@@ -264,6 +285,10 @@ func (s *TimerLayer) System() store.SystemStore {
 
 func (s *TimerLayer) Team() store.TeamStore {
 	return s.TeamStore
+}
+
+func (s *TimerLayer) TeamOrganizationMember() store.TeamOrganizationMemberStore {
+	return s.TeamOrganizationMemberStore
 }
 
 func (s *TimerLayer) TemporaryPost() store.TemporaryPostStore {
@@ -376,6 +401,11 @@ type TimerLayerDesktopTokensStore struct {
 	Root *TimerLayer
 }
 
+type TimerLayerDirectMessageExceptionStore struct {
+	store.DirectMessageExceptionStore
+	Root *TimerLayer
+}
+
 type TimerLayerDraftStore struct {
 	store.DraftStore
 	Root *TimerLayer
@@ -388,6 +418,11 @@ type TimerLayerEmojiStore struct {
 
 type TimerLayerFileInfoStore struct {
 	store.FileInfoStore
+	Root *TimerLayer
+}
+
+type TimerLayerGloballyDiscoverableUserStore struct {
+	store.GloballyDiscoverableUserStore
 	Root *TimerLayer
 }
 
@@ -421,8 +456,18 @@ type TimerLayerOAuthStore struct {
 	Root *TimerLayer
 }
 
+type TimerLayerOperationalTrackingGroupStore struct {
+	store.OperationalTrackingGroupStore
+	Root *TimerLayer
+}
+
 type TimerLayerOutgoingOAuthConnectionStore struct {
 	store.OutgoingOAuthConnectionStore
+	Root *TimerLayer
+}
+
+type TimerLayerPanicButtonOnlyUserStore struct {
+	store.PanicButtonOnlyUserStore
 	Root *TimerLayer
 }
 
@@ -538,6 +583,11 @@ type TimerLayerSystemStore struct {
 
 type TimerLayerTeamStore struct {
 	store.TeamStore
+	Root *TimerLayer
+}
+
+type TimerLayerTeamOrganizationMemberStore struct {
+	store.TeamOrganizationMemberStore
 	Root *TimerLayer
 }
 
@@ -3872,6 +3922,86 @@ func (s *TimerLayerDesktopTokensStore) Insert(token string, createAt int64, user
 	return err
 }
 
+func (s *TimerLayerDirectMessageExceptionStore) Delete(userID1 string, userID2 string) error {
+	start := time.Now()
+
+	err := s.DirectMessageExceptionStore.Delete(userID1, userID2)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("DirectMessageExceptionStore.Delete", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerDirectMessageExceptionStore) GetAll() ([]*model.DirectMessageException, error) {
+	start := time.Now()
+
+	result, err := s.DirectMessageExceptionStore.GetAll()
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("DirectMessageExceptionStore.GetAll", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerDirectMessageExceptionStore) GetPartnersForUser(userID string) ([]string, error) {
+	start := time.Now()
+
+	result, err := s.DirectMessageExceptionStore.GetPartnersForUser(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("DirectMessageExceptionStore.GetPartnersForUser", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerDirectMessageExceptionStore) IsException(userID1 string, userID2 string) (bool, error) {
+	start := time.Now()
+
+	result, err := s.DirectMessageExceptionStore.IsException(userID1, userID2)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("DirectMessageExceptionStore.IsException", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerDirectMessageExceptionStore) Save(rctx request.CTX, userID1 string, userID2 string, createdBy string) error {
+	start := time.Now()
+
+	err := s.DirectMessageExceptionStore.Save(rctx, userID1, userID2, createdBy)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("DirectMessageExceptionStore.Save", success, elapsed)
+	}
+	return err
+}
+
 func (s *TimerLayerDraftStore) Delete(userID string, channelID string, rootID string) error {
 	start := time.Now()
 
@@ -4540,6 +4670,70 @@ func (s *TimerLayerFileInfoStore) Upsert(rctx request.CTX, info *model.FileInfo)
 		s.Root.Metrics.ObserveStoreMethodDuration("FileInfoStore.Upsert", success, elapsed)
 	}
 	return result, err
+}
+
+func (s *TimerLayerGloballyDiscoverableUserStore) Delete(userID string) error {
+	start := time.Now()
+
+	err := s.GloballyDiscoverableUserStore.Delete(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("GloballyDiscoverableUserStore.Delete", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerGloballyDiscoverableUserStore) GetAll() ([]string, error) {
+	start := time.Now()
+
+	result, err := s.GloballyDiscoverableUserStore.GetAll()
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("GloballyDiscoverableUserStore.GetAll", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerGloballyDiscoverableUserStore) IsDiscoverable(userID string) (bool, error) {
+	start := time.Now()
+
+	result, err := s.GloballyDiscoverableUserStore.IsDiscoverable(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("GloballyDiscoverableUserStore.IsDiscoverable", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerGloballyDiscoverableUserStore) Save(rctx request.CTX, userID string, createdBy string) error {
+	start := time.Now()
+
+	err := s.GloballyDiscoverableUserStore.Save(rctx, userID, createdBy)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("GloballyDiscoverableUserStore.Save", success, elapsed)
+	}
+	return err
 }
 
 func (s *TimerLayerGroupStore) AdminRoleGroupsForSyncableMember(userID string, syncableID string, syncableType model.GroupSyncableType) ([]string, error) {
@@ -6206,6 +6400,134 @@ func (s *TimerLayerOAuthStore) UpdateApp(app *model.OAuthApp) (*model.OAuthApp, 
 	return result, err
 }
 
+func (s *TimerLayerOperationalTrackingGroupStore) AddMember(rctx request.CTX, groupID string, userID string, createdBy string) error {
+	start := time.Now()
+
+	err := s.OperationalTrackingGroupStore.AddMember(rctx, groupID, userID, createdBy)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.AddMember", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) Delete(groupID string) error {
+	start := time.Now()
+
+	err := s.OperationalTrackingGroupStore.Delete(groupID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.Delete", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) Get(groupID string) (*model.OperationalTrackingGroup, error) {
+	start := time.Now()
+
+	result, err := s.OperationalTrackingGroupStore.Get(groupID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.Get", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) GetForTeam(teamID string) ([]*model.OperationalTrackingGroup, error) {
+	start := time.Now()
+
+	result, err := s.OperationalTrackingGroupStore.GetForTeam(teamID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.GetForTeam", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) GetMembers(groupID string) ([]*model.OperationalTrackingGroupMember, error) {
+	start := time.Now()
+
+	result, err := s.OperationalTrackingGroupStore.GetMembers(groupID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.GetMembers", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) RemoveMember(groupID string, userID string) error {
+	start := time.Now()
+
+	err := s.OperationalTrackingGroupStore.RemoveMember(groupID, userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.RemoveMember", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) Save(rctx request.CTX, group *model.OperationalTrackingGroup) (*model.OperationalTrackingGroup, error) {
+	start := time.Now()
+
+	result, err := s.OperationalTrackingGroupStore.Save(rctx, group)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.Save", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerOperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID string, status string) error {
+	start := time.Now()
+
+	err := s.OperationalTrackingGroupStore.UpdateCoviaSyncStatus(groupID, status)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.UpdateCoviaSyncStatus", success, elapsed)
+	}
+	return err
+}
+
 func (s *TimerLayerOutgoingOAuthConnectionStore) DeleteConnection(rctx request.CTX, id string) error {
 	start := time.Now()
 
@@ -6284,6 +6606,70 @@ func (s *TimerLayerOutgoingOAuthConnectionStore) UpdateConnection(rctx request.C
 		s.Root.Metrics.ObserveStoreMethodDuration("OutgoingOAuthConnectionStore.UpdateConnection", success, elapsed)
 	}
 	return result, err
+}
+
+func (s *TimerLayerPanicButtonOnlyUserStore) Delete(userID string) error {
+	start := time.Now()
+
+	err := s.PanicButtonOnlyUserStore.Delete(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("PanicButtonOnlyUserStore.Delete", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerPanicButtonOnlyUserStore) GetAll() ([]string, error) {
+	start := time.Now()
+
+	result, err := s.PanicButtonOnlyUserStore.GetAll()
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("PanicButtonOnlyUserStore.GetAll", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerPanicButtonOnlyUserStore) IsPanicButtonOnly(userID string) (bool, error) {
+	start := time.Now()
+
+	result, err := s.PanicButtonOnlyUserStore.IsPanicButtonOnly(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("PanicButtonOnlyUserStore.IsPanicButtonOnly", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerPanicButtonOnlyUserStore) Save(rctx request.CTX, userID string, createdBy string) error {
+	start := time.Now()
+
+	err := s.PanicButtonOnlyUserStore.Save(rctx, userID, createdBy)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("PanicButtonOnlyUserStore.Save", success, elapsed)
+	}
+	return err
 }
 
 func (s *TimerLayerPluginStore) CompareAndDelete(keyVal *model.PluginKeyValue, oldValue []byte) (bool, error) {
@@ -11513,6 +11899,86 @@ func (s *TimerLayerTeamStore) UserBelongsToTeams(userID string, teamIds []string
 	return result, err
 }
 
+func (s *TimerLayerTeamOrganizationMemberStore) Delete(teamID string, userID string) error {
+	start := time.Now()
+
+	err := s.TeamOrganizationMemberStore.Delete(teamID, userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("TeamOrganizationMemberStore.Delete", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerTeamOrganizationMemberStore) GetForTeam(teamID string) ([]string, error) {
+	start := time.Now()
+
+	result, err := s.TeamOrganizationMemberStore.GetForTeam(teamID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("TeamOrganizationMemberStore.GetForTeam", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerTeamOrganizationMemberStore) GetForUser(userID string) ([]string, error) {
+	start := time.Now()
+
+	result, err := s.TeamOrganizationMemberStore.GetForUser(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("TeamOrganizationMemberStore.GetForUser", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerTeamOrganizationMemberStore) IsOrgMember(teamID string, userID string) (bool, error) {
+	start := time.Now()
+
+	result, err := s.TeamOrganizationMemberStore.IsOrgMember(teamID, userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("TeamOrganizationMemberStore.IsOrgMember", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerTeamOrganizationMemberStore) Save(rctx request.CTX, teamID string, userID string, createdBy string) error {
+	start := time.Now()
+
+	err := s.TeamOrganizationMemberStore.Save(rctx, teamID, userID, createdBy)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("TeamOrganizationMemberStore.Save", success, elapsed)
+	}
+	return err
+}
+
 func (s *TimerLayerTemporaryPostStore) Delete(rctx request.CTX, id string) error {
 	start := time.Now()
 
@@ -14469,16 +14935,20 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.ComplianceStore = &TimerLayerComplianceStore{ComplianceStore: childStore.Compliance(), Root: &newStore}
 	newStore.ContentFlaggingStore = &TimerLayerContentFlaggingStore{ContentFlaggingStore: childStore.ContentFlagging(), Root: &newStore}
 	newStore.DesktopTokensStore = &TimerLayerDesktopTokensStore{DesktopTokensStore: childStore.DesktopTokens(), Root: &newStore}
+	newStore.DirectMessageExceptionStore = &TimerLayerDirectMessageExceptionStore{DirectMessageExceptionStore: childStore.DirectMessageException(), Root: &newStore}
 	newStore.DraftStore = &TimerLayerDraftStore{DraftStore: childStore.Draft(), Root: &newStore}
 	newStore.EmojiStore = &TimerLayerEmojiStore{EmojiStore: childStore.Emoji(), Root: &newStore}
 	newStore.FileInfoStore = &TimerLayerFileInfoStore{FileInfoStore: childStore.FileInfo(), Root: &newStore}
+	newStore.GloballyDiscoverableUserStore = &TimerLayerGloballyDiscoverableUserStore{GloballyDiscoverableUserStore: childStore.GloballyDiscoverableUser(), Root: &newStore}
 	newStore.GroupStore = &TimerLayerGroupStore{GroupStore: childStore.Group(), Root: &newStore}
 	newStore.JobStore = &TimerLayerJobStore{JobStore: childStore.Job(), Root: &newStore}
 	newStore.LicenseStore = &TimerLayerLicenseStore{LicenseStore: childStore.License(), Root: &newStore}
 	newStore.LinkMetadataStore = &TimerLayerLinkMetadataStore{LinkMetadataStore: childStore.LinkMetadata(), Root: &newStore}
 	newStore.NotifyAdminStore = &TimerLayerNotifyAdminStore{NotifyAdminStore: childStore.NotifyAdmin(), Root: &newStore}
 	newStore.OAuthStore = &TimerLayerOAuthStore{OAuthStore: childStore.OAuth(), Root: &newStore}
+	newStore.OperationalTrackingGroupStore = &TimerLayerOperationalTrackingGroupStore{OperationalTrackingGroupStore: childStore.OperationalTrackingGroup(), Root: &newStore}
 	newStore.OutgoingOAuthConnectionStore = &TimerLayerOutgoingOAuthConnectionStore{OutgoingOAuthConnectionStore: childStore.OutgoingOAuthConnection(), Root: &newStore}
+	newStore.PanicButtonOnlyUserStore = &TimerLayerPanicButtonOnlyUserStore{PanicButtonOnlyUserStore: childStore.PanicButtonOnlyUser(), Root: &newStore}
 	newStore.PluginStore = &TimerLayerPluginStore{PluginStore: childStore.Plugin(), Root: &newStore}
 	newStore.PostStore = &TimerLayerPostStore{PostStore: childStore.Post(), Root: &newStore}
 	newStore.PostAcknowledgementStore = &TimerLayerPostAcknowledgementStore{PostAcknowledgementStore: childStore.PostAcknowledgement(), Root: &newStore}
@@ -14502,6 +14972,7 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.StatusStore = &TimerLayerStatusStore{StatusStore: childStore.Status(), Root: &newStore}
 	newStore.SystemStore = &TimerLayerSystemStore{SystemStore: childStore.System(), Root: &newStore}
 	newStore.TeamStore = &TimerLayerTeamStore{TeamStore: childStore.Team(), Root: &newStore}
+	newStore.TeamOrganizationMemberStore = &TimerLayerTeamOrganizationMemberStore{TeamOrganizationMemberStore: childStore.TeamOrganizationMember(), Root: &newStore}
 	newStore.TemporaryPostStore = &TimerLayerTemporaryPostStore{TemporaryPostStore: childStore.TemporaryPost(), Root: &newStore}
 	newStore.TermsOfServiceStore = &TimerLayerTermsOfServiceStore{TermsOfServiceStore: childStore.TermsOfService(), Root: &newStore}
 	newStore.ThreadStore = &TimerLayerThreadStore{ThreadStore: childStore.Thread(), Root: &newStore}

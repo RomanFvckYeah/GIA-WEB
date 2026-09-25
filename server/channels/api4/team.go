@@ -1162,6 +1162,16 @@ func removeTeamMember(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// See the matching check in api4/channel.go's removeChannelMember for why this is
+	// separate from the remove_user_from_team permission check above.
+	if c.Params.UserId != c.AppContext.Session().UserId &&
+		!c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) &&
+		(!c.App.IsUserOrgMemberOfTeam(c.AppContext, c.Params.TeamId, c.Params.UserId) ||
+			!c.App.IsUserOrgMemberOfTeam(c.AppContext, c.Params.TeamId, c.AppContext.Session().UserId)) {
+		c.Err = model.NewAppError("removeTeamMember", "api.team.remove_member.not_same_organization.app_error", nil, "", http.StatusForbidden)
+		return
+	}
+
 	if err := c.App.RemoveUserFromTeam(c.AppContext, c.Params.TeamId, c.Params.UserId, c.AppContext.Session().UserId); err != nil {
 		c.Err = err
 		return

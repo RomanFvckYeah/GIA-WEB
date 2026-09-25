@@ -598,6 +598,54 @@ func TestGetOrCreateDirectChannel(t *testing.T) {
 		require.NotNil(t, appErr)
 	})
 
+	t.Run("Direct message exception allows cross-team DM creation with restriction", func(t *testing.T) {
+		th.App.UpdateConfig(func(cfg *model.Config) {
+			setting := model.DirectMessageTeam
+			cfg.TeamSettings.RestrictDirectMessage = &setting
+		})
+
+		// Uses its own users (not the shared user1/user2) so it doesn't leave behind a
+		// persisted DM channel that later subtests in this table assume doesn't exist yet.
+		exceptionUser1 := th.CreateUser(t)
+		th.LinkUserToTeam(t, exceptionUser1, team1)
+		exceptionUser2 := th.CreateUser(t)
+		th.LinkUserToTeam(t, exceptionUser2, team2)
+
+		appErr := th.App.AddDirectMessageException(th.Context, exceptionUser1.Id, exceptionUser2.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		t.Cleanup(func() {
+			th.App.RemoveDirectMessageException(th.Context, exceptionUser1.Id, exceptionUser2.Id)
+		})
+
+		channel, appErr := th.App.GetOrCreateDirectChannel(th.Context, exceptionUser1.Id, exceptionUser2.Id)
+		require.Nil(t, appErr)
+		require.NotNil(t, channel, "channel should be non-nil")
+	})
+
+	t.Run("Globally discoverable user allows cross-team DM creation with restriction", func(t *testing.T) {
+		th.App.UpdateConfig(func(cfg *model.Config) {
+			setting := model.DirectMessageTeam
+			cfg.TeamSettings.RestrictDirectMessage = &setting
+		})
+
+		// Uses its own users so it doesn't leave behind a persisted DM channel that later
+		// subtests in this table assume doesn't exist yet.
+		discoverableUser1 := th.CreateUser(t)
+		th.LinkUserToTeam(t, discoverableUser1, team1)
+		discoverableUser2 := th.CreateUser(t)
+		th.LinkUserToTeam(t, discoverableUser2, team2)
+
+		appErr := th.App.AddGloballyDiscoverableUser(th.Context, discoverableUser2.Id, th.BasicUser.Id)
+		require.Nil(t, appErr)
+		t.Cleanup(func() {
+			th.App.RemoveGloballyDiscoverableUser(th.Context, discoverableUser2.Id)
+		})
+
+		channel, appErr := th.App.GetOrCreateDirectChannel(th.Context, discoverableUser1.Id, discoverableUser2.Id)
+		require.Nil(t, appErr)
+		require.NotNil(t, channel, "channel should be non-nil")
+	})
+
 	t.Run("Cannot create with a remote user", func(t *testing.T) {
 		th.SetUserRemoteID(t, user2.Id, model.NewId())
 
@@ -3610,6 +3658,32 @@ func TestCheckIfChannelIsRestrictedDM(t *testing.T) {
 		groupChannel := th.CreateGroupChannel(t, user1, user2)
 
 		restricted, err := th.App.CheckIfChannelIsRestrictedDM(th.Context, groupChannel)
+		require.Nil(t, err)
+		require.False(t, restricted)
+	})
+
+	t.Run("direct message exception bypasses the restriction", func(t *testing.T) {
+		appErr := th.App.AddDirectMessageException(th.Context, th.BasicUser.Id, th.BasicUser2.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
+		defer func() {
+			appErr := th.App.RemoveDirectMessageException(th.Context, th.BasicUser.Id, th.BasicUser2.Id)
+			require.Nil(t, appErr)
+		}()
+
+		restricted, err := th.App.CheckIfChannelIsRestrictedDM(th.Context, channel)
+		require.Nil(t, err)
+		require.False(t, restricted)
+	})
+
+	t.Run("globally discoverable user bypasses the restriction", func(t *testing.T) {
+		appErr := th.App.AddGloballyDiscoverableUser(th.Context, th.BasicUser2.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
+		defer func() {
+			appErr := th.App.RemoveGloballyDiscoverableUser(th.Context, th.BasicUser2.Id)
+			require.Nil(t, appErr)
+		}()
+
+		restricted, err := th.App.CheckIfChannelIsRestrictedDM(th.Context, channel)
 		require.Nil(t, err)
 		require.False(t, restricted)
 	})

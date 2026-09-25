@@ -260,6 +260,10 @@
     "translation": "No se puede eliminar el usuario del canal predeterminado {{.Channel}}."
   },
   {
+    "id": "api.channel.remove_channel_member.not_same_organization.app_error",
+    "translation": "Este usuario no comparte organización contigo en este equipo y no puede ser removido de este canal."
+  },
+  {
     "id": "api.channel.remove_channel_member.type.app_error",
     "translation": "No se puede eliminar el usuario del canal."
   },
@@ -1718,6 +1722,54 @@
   {
     "id": "api.team.update_team_scheme.scheme_scope.error",
     "translation": "No se puede establecer el esquema para el equipo porque el esquema proporcionado no es un esquema de equipo."
+  },
+  {
+    "id": "api.templates.account_credentials_body.app_download_info",
+    "translation": "Disponible para iOS y Android."
+  },
+  {
+    "id": "api.templates.account_credentials_body.app_download_title",
+    "translation": "Descarga la aplicación móvil"
+  },
+  {
+    "id": "api.templates.account_credentials_body.button",
+    "translation": "Iniciar sesión"
+  },
+  {
+    "id": "api.templates.account_credentials_body.download_android",
+    "translation": "Descargar para Android"
+  },
+  {
+    "id": "api.templates.account_credentials_body.download_ios",
+    "translation": "Descargar para iOS"
+  },
+  {
+    "id": "api.templates.account_credentials_body.info",
+    "translation": "Se creó una cuenta para ti en {{ .SiteName }}. Usa estas credenciales para iniciar sesión:"
+  },
+  {
+    "id": "api.templates.account_credentials_body.info1",
+    "translation": "Por seguridad, te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez."
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_login",
+    "translation": "Usuario"
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_password",
+    "translation": "Contraseña"
+  },
+  {
+    "id": "api.templates.account_credentials_body.label_server",
+    "translation": "Servidor"
+  },
+  {
+    "id": "api.templates.account_credentials_body.title",
+    "translation": "Tu cuenta está lista"
+  },
+  {
+    "id": "api.templates.account_credentials_subject",
+    "translation": "[{{ .SiteName }}] Tu cuenta está lista"
   },
   {
     "id": "api.templates.deactivate_body.info",
@@ -5204,6 +5256,14 @@
     "translation": "No se puede quitar un usuario de un equipo restringido a grupos."
   },
   {
+    "id": "api.team.remove_member.not_same_organization.app_error",
+    "translation": "Este usuario no comparte organización contigo en este equipo y no puede ser removido de él."
+  },
+  {
+    "id": "api.team.create_member.organization_limit_reached.app_error",
+    "translation": "Este equipo llegó a su límite de miembros de organización. Pedile a un administrador del sistema que lo aumente antes de crear más cuentas."
+  },
+  {
     "id": "api.team.invite_guests.channel_in_invalid_team.app_error",
     "translation": "Los canales de la invitación deben ser parte del equipo al cual fue invitado."
   },
@@ -5518,6 +5578,18 @@
   {
     "id": "app.scheme.delete.app_error",
     "translation": "No se puede eliminar este esquema."
+  },
+  {
+    "id": "app.team_organization_member.delete.app_error",
+    "translation": "No se puede quitar el miembro de la organización del equipo."
+  },
+  {
+    "id": "app.team_organization_member.get_for_team.app_error",
+    "translation": "No se pueden obtener los miembros de la organización del equipo."
+  },
+  {
+    "id": "app.team_organization_member.save.app_error",
+    "translation": "No se puede guardar el miembro de la organización del equipo."
   },
   {
     "id": "app.reaction.save.save.app_error",
@@ -5974,6 +6046,18 @@
   {
     "id": "app.webhooks.analytics_incoming_count.app_error",
     "translation": "No se puede contabilizar los webhooks de entrada."
+  },
+  {
+    "id": "app.welcome_bot.default_prompt",
+    "translation": "¿Qué quieres saber?"
+  },
+  {
+    "id": "app.welcome_bot.invalid_option",
+    "translation": "Esa opción ya no está disponible."
+  },
+  {
+    "id": "app.welcome_bot.no_match",
+    "translation": "No entendí bien. Elige una de las opciones de abajo."
   },
   {
     "id": "model.config.is_valid.directory.app_error",
@@ -7032,6 +7116,10 @@
     "translation": "No se puede crear un canal directo entre estos usuarios porque no comparten un equipo en común."
   },
   {
+    "id": "api.direct_message_exception.self_pair.app_error",
+    "translation": "No se puede crear una excepción de mensaje directo entre un usuario y sí mismo."
+  },
+  {
     "id": "app.notification.footer.title",
     "translation": "¿Quieres cambiar la configuración de las notificaciones?"
   },
@@ -7253,7 +7341,7 @@
   },
   {
     "id": "api.templates.email_footer_v2",
-    "translation": "© 2022 Mattermost, Inc. 530 Lytton Avenue, Second floor, Palo Alto, CA, 94301"
+    "translation": "© {{ .CurrentYear }} Okip · GIA - Guardián Inteligente"
   },
   {
     "id": "api.templates.cloud_welcome_email.title",

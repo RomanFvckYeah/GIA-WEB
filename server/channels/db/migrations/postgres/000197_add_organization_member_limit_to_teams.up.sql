@@ -1,0 +1,1 @@
+ALTER TABLE Teams ADD COLUMN IF NOT EXISTS OrganizationMemberLimit int NOT NULL DEFAULT 5;

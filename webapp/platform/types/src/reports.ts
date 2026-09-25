@@ -89,4 +89,6 @@ export type UserReport = UserProfile & {
     days_active?: number;
     total_posts?: number;
     channel_count?: number;
+    team_count?: number;
+    panic_button_only?: boolean;
 }

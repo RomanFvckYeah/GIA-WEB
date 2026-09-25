@@ -100,6 +100,20 @@ function firstAdminCompleteSetup(state = false, action: MMReduxAction) {
     }
 }
 
+// Whether the CURRENT user is restricted to the mobile panic-button flow only — see
+// mattermost-redux/actions/panic_button_only_users.ts.
+function panicButtonOnly(state = false, action: MMReduxAction) {
+    switch (action.type) {
+    case GeneralTypes.PANIC_BUTTON_ONLY_RECEIVED:
+        return action.data;
+    case UserTypes.LOGOUT_SUCCESS:
+        return false;
+
+    default:
+        return state;
+    }
+}
+
 export type CWSAvailabilityState = 'pending' | 'available' | 'unavailable' | 'not_applicable';
 
 function cwsAvailability(state: CWSAvailabilityState = 'pending', action: MMReduxAction): CWSAvailabilityState {
@@ -125,4 +139,5 @@ export default combineReducers({
     firstAdminVisitMarketplaceStatus,
     firstAdminCompleteSetup,
     cwsAvailability,
+    panicButtonOnly,
 });

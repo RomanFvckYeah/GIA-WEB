@@ -82,13 +82,17 @@ func (options *ReportingBaseOptions) IsValid() *AppError {
 type UserReportQuery struct {
 	User
 	UserPostStats
-	ChannelCount *int
+	ChannelCount    *int
+	TeamCount       *int
+	PanicButtonOnly bool
 }
 
 type UserReport struct {
 	User
 	UserPostStats
-	ChannelCount *int `json:"channel_count,omitempty"`
+	ChannelCount    *int `json:"channel_count,omitempty"`
+	TeamCount       *int `json:"team_count,omitempty"`
+	PanicButtonOnly bool `json:"panic_button_only,omitempty"`
 }
 
 func (u *UserReport) ToReport() []string {
@@ -122,6 +126,12 @@ func (u *UserReport) ToReport() []string {
 		deleteAt = time.UnixMilli(u.DeleteAt).String()
 	}
 
+	teamCount := ""
+	if u.TeamCount != nil {
+		teamCount = strconv.Itoa(*u.TeamCount)
+	}
+	panicButtonOnly := strconv.FormatBool(u.PanicButtonOnly)
+
 	return []string{
 		u.Id,
 		u.Username,
@@ -136,6 +146,8 @@ func (u *UserReport) ToReport() []string {
 		totalPosts,
 		channelCount,
 		deleteAt,
+		teamCount,
+		panicButtonOnly,
 	}
 }
 
@@ -170,9 +182,11 @@ func (u *UserReportOptions) IsValid() *AppError {
 func (u *UserReportQuery) ToReport() *UserReport {
 	u.ClearNonProfileFields(true)
 	return &UserReport{
-		User:          u.User,
-		UserPostStats: u.UserPostStats,
-		ChannelCount:  u.ChannelCount,
+		User:            u.User,
+		UserPostStats:   u.UserPostStats,
+		ChannelCount:    u.ChannelCount,
+		TeamCount:       u.TeamCount,
+		PanicButtonOnly: u.PanicButtonOnly,
 	}
 }
 

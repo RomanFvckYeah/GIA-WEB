@@ -9,10 +9,7 @@ import UserGuideDropdown from './user_guide_dropdown';
 
 describe('components/channel_header/components/UserGuideDropdown', () => {
     const baseProps = {
-        helpLink: 'helpLink',
         isMobileView: false,
-        reportAProblemLink: 'reportAProblemLink',
-        enableAskCommunityLink: 'true',
         location: {
             pathname: '/team/channel/channelId',
         },
@@ -33,19 +30,6 @@ describe('components/channel_header/components/UserGuideDropdown', () => {
     test('should match snapshot', () => {
         const {container} = renderWithContext(
             <UserGuideDropdown {...baseProps}/>,
-        );
-
-        expect(container).toMatchSnapshot();
-    });
-
-    test('should match snapshot for false of enableAskCommunityLink', () => {
-        const props = {
-            ...baseProps,
-            enableAskCommunityLink: 'false',
-        };
-
-        const {container} = renderWithContext(
-            <UserGuideDropdown {...props}/>,
         );
 
         expect(container).toMatchSnapshot();
@@ -102,23 +86,5 @@ describe('components/channel_header/components/UserGuideDropdown', () => {
 
         // pluginMenuItems are appended, so our entry must be the last one.
         expect(screen.getByText('Test Plugin Item')).toBeInTheDocument();
-    });
-
-    test('should only render Report a Problem link when its value is non-empty', () => {
-        const {rerender} = renderWithContext(
-            <UserGuideDropdown {...baseProps}/>,
-        );
-
-        openMenu();
-        expect(screen.getByText('Report a problem')).toBeInTheDocument();
-
-        rerender(
-            <UserGuideDropdown
-                {...baseProps}
-                reportAProblemLink=''
-            />,
-        );
-
-        expect(screen.queryByText('Report a problem')).not.toBeInTheDocument();
     });
 });

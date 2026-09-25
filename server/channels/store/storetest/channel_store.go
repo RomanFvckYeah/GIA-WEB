@@ -226,6 +226,7 @@ func testChannelStoreSave(t *testing.T, rctx request.CTX, ss store.Store) {
 		Text:            model.NewPointer("banner text"),
 		BackgroundColor: model.NewPointer("#000000"),
 	}
+	o1.ReadOnly = true
 
 	savedChannel, nErr := ss.Channel().Save(rctx, &o1, -1)
 	require.NoError(t, nErr, "should have saved channel")
@@ -233,6 +234,7 @@ func testChannelStoreSave(t *testing.T, rctx request.CTX, ss store.Store) {
 	require.True(t, *savedChannel.BannerInfo.Enabled)
 	require.Equal(t, "banner text", *savedChannel.BannerInfo.Text)
 	require.Equal(t, "#000000", *savedChannel.BannerInfo.BackgroundColor)
+	require.True(t, savedChannel.ReadOnly)
 }
 
 func testChannelStoreSaveDirectChannel(t *testing.T, rctx request.CTX, ss store.Store, s SqlStore) {
@@ -497,6 +499,19 @@ func testChannelStoreUpdate(t *testing.T, rctx request.CTX, ss store.Store) {
 	require.NotNil(t, updatedChannel.BannerInfo)
 	require.Equal(t, "updated text", *updatedChannel.BannerInfo.Text)
 	require.Equal(t, "#FFFFFF", *updatedChannel.BannerInfo.BackgroundColor)
+
+	// can turn on and off read-only
+	channel.ReadOnly = true
+
+	updatedChannel, err = ss.Channel().Update(rctx, &channel)
+	require.NoError(t, err, err)
+	require.True(t, updatedChannel.ReadOnly)
+
+	channel.ReadOnly = false
+
+	updatedChannel, err = ss.Channel().Update(rctx, &channel)
+	require.NoError(t, err, err)
+	require.False(t, updatedChannel.ReadOnly)
 }
 
 func testGetChannelUnread(t *testing.T, rctx request.CTX, ss store.Store) {

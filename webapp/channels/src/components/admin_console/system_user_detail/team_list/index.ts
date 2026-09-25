@@ -10,6 +10,9 @@ import {
     getTeamMembersForUser,
     removeUserFromTeam,
     updateTeamMemberSchemeRoles,
+    getTeamOrganizationMembers,
+    addTeamOrganizationMember,
+    removeTeamOrganizationMember,
 } from 'mattermost-redux/actions/teams';
 
 import {getCurrentLocale} from 'selectors/i18n';
@@ -31,6 +34,9 @@ function mapDispatchToProps(dispatch: Dispatch) {
             getTeamMembersForUser,
             removeUserFromTeam,
             updateTeamMemberSchemeRoles,
+            getTeamOrganizationMembers,
+            addTeamOrganizationMember,
+            removeTeamOrganizationMember,
         }, dispatch),
     };
 }

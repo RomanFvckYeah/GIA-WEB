@@ -1,0 +1,391 @@
+// Redefines the theme-REACTIVE --center-channel-color/--center-channel-bg custom
+// properties (normally overwritten globally by applyTheme() per the viewer's chosen
+// chat theme) to the FIXED --sys-* equivalents. Everything in this app's react-bootstrap
+// Modal usage defaults to those reactive variables for text/background, while modal
+// chrome itself stays a fixed white (--sys-center-channel-bg) — under a theme with a
+// light centerChannelColor (e.g. the built-in "Indigo" theme), text renders nearly
+// invisible. CSS custom properties inherit, so applying this mixin at a modal's root
+// fixes every descendant automatically — our own markup or any third-party component —
+// without having to override each individual selector that happens to read them.
+@mixin team-statistics-fixed-theme-colors {
+    --center-channel-color: var(--sys-center-channel-color);
+    --center-channel-color-rgb: var(--sys-center-channel-color-rgb);
+    --center-channel-bg: var(--sys-center-channel-bg);
+    --center-channel-bg-rgb: var(--sys-center-channel-bg-rgb);
+}
+
+.team-statistics-content {
+    max-width: 1200px;
+    padding: 46px 20px;
+    margin: 0 auto;
+    vertical-align: top;
+
+    &__title {
+        margin: 0 0 20px;
+    }
+}
+
+.team-statistics-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+}
+
+.team-statistics-nav {
+    display: flex;
+    min-width: 200px;
+    flex: 0 0 200px;
+    flex-direction: column;
+    padding-right: 16px;
+    border-right: 1px solid rgba(var(--sys-center-channel-color-rgb), 0.08);
+    gap: 2px;
+}
+
+.team-statistics-nav__item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(var(--sys-center-channel-color-rgb), 0.75);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    transition: all 0.15s ease;
+
+    &:hover,
+    &:focus {
+        background: rgba(var(--sys-center-channel-color-rgb), 0.08);
+        color: var(--sys-center-channel-color);
+    }
+
+    &.active {
+        background: rgba(var(--sys-button-bg-rgb), 0.08);
+        color: var(--sys-button-bg);
+    }
+}
+
+.team-statistics-panel {
+    min-width: 0;
+    flex: 1 1 auto;
+
+    // The Filter dropdown has no built-in left/right variant and defaults to opening
+    // rightward from the button. Our "Filtros" button sits at the right edge of the
+    // table, so without this it opens off-screen (cutting off the Apply button).
+    .Filter_content {
+        right: 0;
+        left: auto;
+    }
+}
+
+.team-statistics-channel-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.team-statistics-team-name {
+    margin: 0 0 20px;
+    color: var(--sys-center-channel-color);
+}
+
+.team-statistics-operational-tracking__title {
+    margin: 0 0 16px;
+    color: var(--sys-center-channel-color);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.team-statistics-user-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+// Shared by every team_statistics modal (dialogClassName carries `team-statistics-modal`
+// alongside its own specific class) — fixes .modal-title/.close plus anything else
+// nested inside, e.g. the Input component's text/label used in edit_user_modal.tsx.
+.team-statistics-modal {
+    @include team-statistics-fixed-theme-colors;
+}
+
+// ChannelInviteModal ("Add people to {channel}") and ResetPasswordModal reuse the same
+// react-bootstrap Modal base without ever receiving the fix above (they're shared,
+// unmodified components — this hooks in via their stable DOM ids instead of a class of
+// ours). Same bug, same fix; this also corrects it anywhere else in the app either modal
+// is opened under a light-text theme, not just from this panel.
+#addUsersToChannelModal {
+    @include team-statistics-fixed-theme-colors;
+
+    .multi-select__footer {
+        gap: 12px;
+    }
+}
+
+#resetPasswordModal {
+    @include team-statistics-fixed-theme-colors;
+}
+
+.team-statistics-manage-channel-modal {
+    &__icon {
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    &__toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+
+    &__hint {
+        margin: 0 0 12px;
+        color: rgba(var(--sys-center-channel-color-rgb), 0.64);
+        font-size: 12px;
+    }
+
+    // .color--link has no built-in disabled state, so a disabled "Quitar" (e.g. members
+    // of the default channel, which the server never allows removing) would otherwise
+    // look identical to an enabled one.
+    .DataGrid .color--link:disabled {
+        color: rgba(var(--sys-center-channel-color-rgb), 0.4);
+        cursor: default;
+
+        &:hover {
+            text-decoration: none;
+        }
+    }
+}
+
+.team-statistics-edit-user-modal {
+    .Input_container {
+        margin-bottom: 16px;
+    }
+
+    &__row {
+        display: flex;
+        margin-bottom: 16px;
+        gap: 16px;
+
+        > * {
+            flex: 1;
+        }
+
+        .Input_container {
+            margin-bottom: 0;
+        }
+    }
+
+    &__hint {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 0 0 16px;
+        background: rgba(var(--sys-center-channel-color-rgb), 0.06);
+        color: rgba(var(--sys-center-channel-color-rgb), 0.75);
+        font-size: 13px;
+    }
+
+    &__error {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 0 0 16px;
+        background: rgba(var(--sys-error-text-color-rgb), 0.08);
+        color: var(--sys-error-text);
+        font-size: 13px;
+    }
+
+    &__checkbox {
+        display: flex;
+        align-items: flex-start;
+        margin: 0 0 16px;
+        color: var(--center-channel-color);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 400;
+        gap: 8px;
+        line-height: 18px;
+
+        input {
+            flex: 0 0 auto;
+            margin: 1px 0 0;
+            cursor: pointer;
+        }
+    }
+
+    &__resetPassword {
+        padding-top: 16px;
+        border-top: var(--border-light);
+        margin-top: 8px;
+    }
+
+    &__footer {
+        gap: 12px;
+    }
+}
+
+.team-statistics-create-user-modal {
+    .Input_container {
+        margin-bottom: 16px;
+    }
+
+    &__row {
+        display: flex;
+        margin-bottom: 16px;
+        gap: 16px;
+
+        > * {
+            flex: 1;
+        }
+
+        .Input_container {
+            margin-bottom: 0;
+        }
+    }
+
+    &__hint {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 0 0 16px;
+        background: rgba(var(--sys-center-channel-color-rgb), 0.06);
+        color: rgba(var(--sys-center-channel-color-rgb), 0.75);
+        font-size: 13px;
+    }
+
+    &__error {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 0 0 16px;
+        background: rgba(var(--sys-error-text-color-rgb), 0.08);
+        color: var(--sys-error-text);
+        font-size: 13px;
+    }
+
+    &__success {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 0 0 16px;
+        background: rgba(var(--online-indicator-rgb), 0.12);
+        color: var(--center-channel-color);
+        font-size: 13px;
+    }
+
+    &__summary {
+        display: flex;
+        align-items: center;
+        margin: 0 0 16px;
+        color: var(--center-channel-color);
+        font-size: 13px;
+        gap: 10px;
+
+        span {
+            color: rgba(var(--center-channel-color-rgb), 0.75);
+        }
+
+        code {
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(var(--center-channel-color-rgb), 0.08);
+            color: var(--center-channel-color);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+        }
+    }
+
+    // Sits directly under the password field and just above the Position field —
+    // negative top margin tucks it against the password input, the bottom margin
+    // keeps it clear of Position.
+    &__password-actions {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -8px 0 20px;
+        gap: 8px;
+    }
+
+    &__checkbox {
+        display: flex;
+        align-items: flex-start;
+        margin: 4px 0 0;
+        color: var(--center-channel-color);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 400;
+        gap: 8px;
+        line-height: 18px;
+
+        input {
+            flex: 0 0 auto;
+            margin: 1px 0 0;
+            cursor: pointer;
+        }
+    }
+
+    &__footer {
+        gap: 12px;
+    }
+
+    // All fields start empty here (unlike edit_user_modal, which is always pre-filled), so
+    // every label renders as the Input widget's native placeholder instead of its floating
+    // legend — same CSS color value as the legend, but the native placeholder reads fainter
+    // with no backdrop of its own. Bump it up for this modal only.
+    .Input::placeholder {
+        color: rgba(var(--center-channel-color-rgb), 0.95);
+    }
+}
+
+// Shared between team-statistics-edit-user-modal and team-statistics-create-user-modal —
+// renders one custom profile attribute (User Attributes) field per entry.
+.team-statistics-custom-attribute-field {
+    margin-bottom: 16px;
+
+    .Input_container {
+        margin-bottom: 0;
+    }
+
+    &__select {
+        display: block;
+        margin: 0;
+        color: rgba(var(--center-channel-color-rgb), 0.75);
+        font-size: 12px;
+        font-weight: 600;
+
+        select {
+            display: block;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .Select {
+            margin-top: 4px;
+        }
+    }
+
+    &__hint {
+        margin-top: 4px;
+        color: rgba(var(--center-channel-color-rgb), 0.64);
+        font-size: 12px;
+    }
+}
+
+.team-statistics-org-only-section {
+    margin-top: 32px;
+
+    &__title {
+        // The theme-REACTIVE --center-channel-color, unlike the FIXED --sys-center-channel-color
+        // the rest of this page uses, renders nearly invisible under a theme with a light
+        // centerChannelColor (e.g. "Indigo") — text meant for a dark background, shown here on
+        // this panel's white one instead. Matching the rest of the page's --sys-* tokens fixes it.
+        margin: 0 0 4px;
+        color: var(--sys-center-channel-color);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    &__hint {
+        margin: 0 0 12px;
+        color: rgba(var(--sys-center-channel-color-rgb), 0.8);
+        font-size: 13px;
+    }
+}

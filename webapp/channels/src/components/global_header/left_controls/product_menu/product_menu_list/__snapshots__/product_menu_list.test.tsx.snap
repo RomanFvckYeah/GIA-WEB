@@ -45,6 +45,42 @@ exports[`components/global/product_switcher_menu should match snapshot with id 1
     </li>
     <li
       class="MenuItem MenuItem--with-icon"
+      id="teamStatistics"
+      role="menuitem"
+    >
+      <a
+        class=""
+        href="//statistics"
+      >
+        <span
+          class="MenuItem__primary-text"
+        >
+          <span
+            class="icon"
+          >
+            <svg
+              fill="currentColor"
+              height="18"
+              version="1.1"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"
+              />
+            </svg>
+          </span>
+          <div
+            class="text"
+          >
+            Statistics
+          </div>
+        </span>
+      </a>
+    </li>
+    <li
+      class="MenuItem MenuItem--with-icon"
       id="nativeAppLink"
       role="menuitem"
     >
@@ -160,6 +196,42 @@ exports[`components/global/product_switcher_menu should match snapshot with most
             class="text"
           >
             System Console
+          </div>
+        </span>
+      </a>
+    </li>
+    <li
+      class="MenuItem MenuItem--with-icon"
+      id="teamStatistics"
+      role="menuitem"
+    >
+      <a
+        class=""
+        href="//statistics"
+      >
+        <span
+          class="MenuItem__primary-text"
+        >
+          <span
+            class="icon"
+          >
+            <svg
+              fill="currentColor"
+              height="18"
+              version="1.1"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"
+              />
+            </svg>
+          </span>
+          <div
+            class="text"
+          >
+            Statistics
           </div>
         </span>
       </a>
@@ -500,6 +572,42 @@ exports[`components/global/product_switcher_menu should show integrations should
             class="text"
           >
             System Console
+          </div>
+        </span>
+      </a>
+    </li>
+    <li
+      class="MenuItem MenuItem--with-icon"
+      id="teamStatistics"
+      role="menuitem"
+    >
+      <a
+        class=""
+        href="/test-team/statistics"
+      >
+        <span
+          class="MenuItem__primary-text"
+        >
+          <span
+            class="icon"
+          >
+            <svg
+              fill="currentColor"
+              height="18"
+              version="1.1"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"
+              />
+            </svg>
+          </span>
+          <div
+            class="text"
+          >
+            Statistics
           </div>
         </span>
       </a>

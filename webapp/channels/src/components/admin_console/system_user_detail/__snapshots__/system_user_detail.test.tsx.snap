@@ -64,10 +64,39 @@ exports[`SystemUserDetail should match default snapshot 1`] = `
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -152,7 +181,17 @@ exports[`SystemUserDetail should match default snapshot 1`] = `
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -311,10 +350,39 @@ exports[`SystemUserDetail should match snapshot if MFA is enabled 1`] = `
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -399,7 +467,17 @@ exports[`SystemUserDetail should match snapshot if MFA is enabled 1`] = `
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -558,10 +636,39 @@ exports[`SystemUserDetail should not fetch CPA data if disabled 1`] = `
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -646,7 +753,17 @@ exports[`SystemUserDetail should not fetch CPA data if disabled 1`] = `
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -805,10 +922,39 @@ exports[`SystemUserDetail should not show manage user settings button when user 
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -893,7 +1039,17 @@ exports[`SystemUserDetail should not show manage user settings button when user 
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -1052,10 +1208,39 @@ exports[`SystemUserDetail should show manage user settings button as activated 1
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -1140,7 +1325,17 @@ exports[`SystemUserDetail should show manage user settings button as activated 1
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -1305,10 +1500,39 @@ exports[`SystemUserDetail should show manage user settings button as disabled wh
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -1393,7 +1617,17 @@ exports[`SystemUserDetail should show manage user settings button as disabled wh
                 </div>
                 <div
                   class="field-column right"
-                />
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -1552,10 +1786,39 @@ exports[`SystemUserDetail should show the activate user button as disabled when 
           <div
             class="AdminUserCard__body"
           >
-            <span />
             <div
               class="two-column-layout"
             >
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    First Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter first name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                >
+                  <label>
+                    Last Name
+                    <input
+                      class="form-control"
+                      placeholder="Enter last name"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+              </div>
               <div
                 class="field-row"
               >
@@ -1667,6 +1930,26 @@ exports[`SystemUserDetail should show the activate user button as disabled when 
                     />
                   </label>
                 </div>
+              </div>
+              <div
+                class="field-row"
+              >
+                <div
+                  class="field-column left"
+                >
+                  <label>
+                    Position
+                    <input
+                      class="form-control"
+                      placeholder="Enter position"
+                      type="text"
+                      value=""
+                    />
+                  </label>
+                </div>
+                <div
+                  class="field-column right"
+                />
               </div>
             </div>
           </div>

@@ -35,11 +35,13 @@ export type Props = {
     children?: React.ReactNode;
     mfaRequired: boolean;
     customProfileAttributesEnabled: boolean;
+    panicButtonOnly: boolean;
     actions: {
         autoUpdateTimezone: (deviceTimezone: string) => void;
         getChannelURLAction: (channelId: string, teamId: string, url: string) => void;
         updateApproximateViewTime: (channelId: string) => void;
         getCustomProfileAttributeFields: () => void;
+        fetchIsCurrentUserPanicButtonOnly: () => void;
     };
     showTermsOfService: boolean;
     location: {
@@ -74,6 +76,9 @@ export default class LoggedIn extends React.PureComponent<Props> {
         if (this.props.customProfileAttributesEnabled) {
             this.props.actions.getCustomProfileAttributeFields();
         }
+
+        // Determine whether this account is restricted to the mobile panic-button flow only
+        this.props.actions.fetchIsCurrentUserPanicButtonOnly();
 
         // Make sure the websockets close and reset version
         window.addEventListener('beforeunload', this.handleBeforeUnload);
@@ -132,7 +137,11 @@ export default class LoggedIn extends React.PureComponent<Props> {
             return <LoadingScreen/>;
         }
 
-        if (this.props.mfaRequired) {
+        if (this.props.panicButtonOnly) {
+            if (this.props.location.pathname !== '/panic_restricted') {
+                return <Redirect to={'/panic_restricted'}/>;
+            }
+        } else if (this.props.mfaRequired) {
             if (this.props.location.pathname !== '/mfa/setup') {
                 return <Redirect to={'/mfa/setup'}/>;
             }

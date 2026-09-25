@@ -65,4 +65,8 @@ const (
 	MigrationKeyAccessControlPolicyV0_3                = "access_control_policy_v0_3_migration"
 	MigrationKeyAddManageAgentPermissions              = "add_manage_agent_permissions"
 	MigrationKeyAddEditFileAttachmentPermission        = "add_edit_file_attachment_permission"
+	MigrationKeyAddGetAnalyticsPermissionToTeamAdmin   = "add_get_analytics_permission_to_team_admin"
+	MigrationKeyAddChannelMembersPermissionToTeamAdmin = "add_channel_members_permission_to_team_admin"
+	MigrationKeyAddChannelReadPermissionToTeamAdmin    = "add_channel_read_permission_to_team_admin"
+	MigrationKeyGiaSystemBotProfileImage               = "gia_system_bot_profile_image"
 )

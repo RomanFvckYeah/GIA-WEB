@@ -48,6 +48,7 @@ import {getStandardAnalytics} from 'mattermost-redux/actions/admin';
 import {fetchAppBindings, fetchRHSAppsBindings} from 'mattermost-redux/actions/apps';
 import {addChannelToInitialCategory, fetchMyCategories, handleManagedCategoryPropertyValuesUpdated, receivedCategoryOrder} from 'mattermost-redux/actions/channel_categories';
 import {
+    getChannel as fetchChannel,
     getChannelAndMyMember,
     getMyChannelMember,
     getChannelStats,
@@ -159,7 +160,6 @@ import {loadPlugin, loadPluginsIfNecessary, removePlugin} from 'plugins';
 import {getHistory} from 'utils/browser_history';
 import {ActionTypes, Constants, AnnouncementBarMessages, SocketEvents, UserStatuses, ModalIdentifiers, PageLoadContext} from 'utils/constants';
 import {getIntl} from 'utils/i18n';
-import {isEnterpriseLicense} from 'utils/license_utils';
 import {isChannelPopoutWindow} from 'utils/popouts/popout_windows';
 import {getSiteURL} from 'utils/url';
 
@@ -324,8 +324,9 @@ export function reconnect() {
         }
     });
 
-    // Refresh custom profile attributes on reconnect
-    if (isEnterpriseLicense(getLicense(state)) && isCustomProfileAttributesEnabled(state)) {
+    // Refresh custom profile attributes on reconnect. Deliberately not gated on license tier,
+    // unlike upstream: User Attributes is not an Enterprise-licensed feature in this fork.
+    if (isCustomProfileAttributesEnabled(state)) {
         dispatch(getCustomProfileAttributeFields());
     }
 
@@ -736,17 +737,13 @@ function handleSharedChannelRemoteUpdatedEvent(msg: WebSocketMessages.SharedChan
     }
 }
 
-// handleChannelConvertedEvent handles updating of channel which is converted from public to private
+// handleChannelConvertedEvent handles updating a channel whose public/private type changed.
+// The event only carries the channel_id (not the new type, which can go either
+// direction), so the channel is re-fetched from the server rather than assumed.
 function handleChannelConvertedEvent(msg: WebSocketMessages.ChannelConverted) {
     const channelId = msg.data.channel_id;
-    if (channelId) {
-        const channel = getChannel(getState(), channelId);
-        if (channel) {
-            dispatch({
-                type: ChannelTypes.RECEIVED_CHANNEL,
-                data: {...channel, type: General.PRIVATE_CHANNEL},
-            });
-        }
+    if (channelId && getChannel(getState(), channelId)) {
+        dispatch(fetchChannel(channelId));
     }
 }
 

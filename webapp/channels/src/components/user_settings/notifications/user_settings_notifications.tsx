@@ -11,10 +11,8 @@ import type {InputProps, OnChangeValue, StylesConfig} from 'react-select';
 import {components} from 'react-select';
 import CreatableReactSelect from 'react-select/creatable';
 
-import {LightbulbOutlineIcon} from '@mattermost/compass-icons/components';
 import type {UserNotifyProps, UserProfile} from '@mattermost/types/users';
 
-import ExternalLink from 'components/external_link';
 import SettingItem from 'components/setting_item';
 import SettingItemMax from 'components/setting_item_max';
 import RestrictedIndicator from 'components/widgets/menu/menu_items/restricted_indicator';
@@ -1008,24 +1006,6 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                             <FormattedMessage
                                 id='user.settings.notifications.header'
                                 defaultMessage='Notifications'
-                            />
-                        }
-                        info={
-                            <FormattedMessage
-                                id='user.settings.notifications.learnMore'
-                                defaultMessage='<a>Learn more about notifications</a>'
-                                values={{
-                                    a: (chunks) => ((
-                                        <ExternalLink
-                                            location='user_settings_notifications'
-                                            href='https://mattermost.com/pl/about-notifications'
-                                            className='btn btn-link'
-                                        >
-                                            <LightbulbOutlineIcon className='circular-border'/>
-                                            <span>{chunks}</span>
-                                        </ExternalLink>
-                                    )),
-                                }}
                             />
                         }
                     />

@@ -2412,20 +2412,34 @@ func (s *ThemeSettings) SetDefaults() {
 	}
 }
 
+// WelcomeFaqItem is one option in the system bot's interactive welcome menu:
+// a button Label the user clicks, the Markdown Answer the bot replies with, and
+// comma-separated Keywords used to match the option against free-text messages
+// the user sends to the bot.
+type WelcomeFaqItem struct {
+	Label    *string `access:"site_customization"`
+	Answer   *string `access:"site_customization"`
+	Keywords *string `access:"site_customization"`
+}
+
 type TeamSettings struct {
-	SiteName                        *string `access:"site_customization"`
-	MaxUsersPerTeam                 *int    `access:"site_users_and_teams"`
-	EnableJoinLeaveMessageByDefault *bool   `access:"site_users_and_teams"`
-	EnableUserCreation              *bool   `access:"authentication_signup"`
-	EnableOpenServer                *bool   `access:"authentication_signup"`
-	EnableUserDeactivation          *bool   `access:"experimental_features"`
-	RestrictCreationToDomains       *string `access:"authentication_signup"` // telemetry: none
-	EnableCustomUserStatuses        *bool   `access:"site_users_and_teams"`
-	EnableCustomBrand               *bool   `access:"site_customization"`
-	CustomBrandText                 *string `access:"site_customization"`
-	CustomDescriptionText           *string `access:"site_customization"`
-	RestrictDirectMessage           *string `access:"site_users_and_teams"`
-	EnableLastActiveTime            *bool   `access:"site_users_and_teams"`
+	SiteName                        *string           `access:"site_customization"`
+	MaxUsersPerTeam                 *int              `access:"site_users_and_teams"`
+	EnableJoinLeaveMessageByDefault *bool             `access:"site_users_and_teams"`
+	EnableUserCreation              *bool             `access:"authentication_signup"`
+	EnableOpenServer                *bool             `access:"authentication_signup"`
+	EnableUserDeactivation          *bool             `access:"experimental_features"`
+	RestrictCreationToDomains       *string           `access:"authentication_signup"` // telemetry: none
+	EnableCustomUserStatuses        *bool             `access:"site_users_and_teams"`
+	EnableCustomBrand               *bool             `access:"site_customization"`
+	CustomBrandText                 *string           `access:"site_customization"`
+	CustomDescriptionText           *string           `access:"site_customization"`
+	EnableWelcomeMessageDM          *bool             `access:"site_customization"`
+	WelcomeMessageDMText            *string           `access:"site_customization"` // telemetry: none
+	WelcomeFaqPrompt                *string           `access:"site_customization"` // telemetry: none
+	WelcomeFaqItems                 []*WelcomeFaqItem `access:"site_customization"` // telemetry: none
+	RestrictDirectMessage           *string           `access:"site_users_and_teams"`
+	EnableLastActiveTime            *bool             `access:"site_users_and_teams"`
 	// In seconds.
 	UserStatusAwayTimeout               *int64  `access:"experimental_features"`
 	MaxChannelsPerTeam                  *int64  `access:"site_users_and_teams"`
@@ -2487,6 +2501,22 @@ func (s *TeamSettings) SetDefaults() {
 
 	if s.CustomDescriptionText == nil {
 		s.CustomDescriptionText = NewPointer(TeamSettingsDefaultCustomDescriptionText)
+	}
+
+	if s.EnableWelcomeMessageDM == nil {
+		s.EnableWelcomeMessageDM = NewPointer(false)
+	}
+
+	if s.WelcomeMessageDMText == nil {
+		s.WelcomeMessageDMText = NewPointer("")
+	}
+
+	if s.WelcomeFaqPrompt == nil {
+		s.WelcomeFaqPrompt = NewPointer("")
+	}
+
+	if s.WelcomeFaqItems == nil {
+		s.WelcomeFaqItems = []*WelcomeFaqItem{}
 	}
 
 	if s.RestrictDirectMessage == nil {
@@ -3851,6 +3881,29 @@ func (s *ImageProxySettings) SetDefaults() {
 	}
 }
 
+// CoviaSettings configures the outgoing sync of Operational Tracking Groups (and their members)
+// to the external Covia service. Disabled (Enable=false) by default — Covia's endpoint doesn't
+// exist yet, and leaving this unconfigured must never affect local group/member management.
+type CoviaSettings struct {
+	Enable  *bool   `access:"environment"`
+	BaseURL *string `access:"environment"`
+	APIKey  *string `access:"environment"`
+}
+
+func (s *CoviaSettings) SetDefaults() {
+	if s.Enable == nil {
+		s.Enable = NewPointer(false)
+	}
+
+	if s.BaseURL == nil {
+		s.BaseURL = NewPointer("")
+	}
+
+	if s.APIKey == nil {
+		s.APIKey = NewPointer("")
+	}
+}
+
 // ImportSettings defines configuration settings for file imports.
 type ImportSettings struct {
 	// The directory where to store the imported files.
@@ -4022,6 +4075,7 @@ type Config struct {
 	AccessControlSettings       AccessControlSettings
 	ContentFlaggingSettings     ContentFlaggingSettings
 	AutoTranslationSettings     AutoTranslationSettings
+	CoviaSettings               CoviaSettings // telemetry: none
 }
 
 func (o *Config) Auditable() map[string]any {
@@ -4130,6 +4184,7 @@ func (o *Config) SetDefaults() {
 	o.DisplaySettings.SetDefaults()
 	o.GuestAccountsSettings.SetDefaults()
 	o.ImageProxySettings.SetDefaults()
+	o.CoviaSettings.SetDefaults()
 	o.CloudSettings.SetDefaults()
 	if o.FeatureFlags == nil {
 		o.FeatureFlags = &FeatureFlags{}

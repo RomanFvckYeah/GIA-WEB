@@ -20,10 +20,16 @@ type Props = {
     doRemoveUserFromTeam: (teamId: string) => Promise<void>;
     doMakeUserTeamAdmin: (teamId: string) => Promise<void>;
     doMakeUserTeamMember: (teamId: string) => Promise<void>;
+    isOrgMember: boolean;
+    doToggleOrgMember: (teamId: string, isMember: boolean) => Promise<void>;
     readOnly?: boolean;
 }
 
 export default class TeamRow extends React.PureComponent<Props> {
+    private handleToggleOrgMember = (e: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.doToggleOrgMember(this.props.team.id, e.target.checked);
+    };
+
     private renderTeamType = (team: Team) => {
         if (team.group_constrained) {
             return (
@@ -105,6 +111,18 @@ export default class TeamRow extends React.PureComponent<Props> {
 
                     <span className='TeamRow__description'>
                         {this.renderTeamRole(team)}
+                    </span>
+
+                    <span
+                        className='TeamRow__description'
+                        title={Utils.localizeMessage({id: 'admin.systemUserDetail.teamList.organizationTooltip', defaultMessage: 'When checked, this user is a genuine member of this team\'s organization and can be edited or removed by team_admins who share that organization membership.'})}
+                    >
+                        <input
+                            type='checkbox'
+                            checked={this.props.isOrgMember}
+                            disabled={this.props.readOnly}
+                            onChange={this.handleToggleOrgMember}
+                        />
                     </span>
 
                     <span className='TeamRow__actions'>

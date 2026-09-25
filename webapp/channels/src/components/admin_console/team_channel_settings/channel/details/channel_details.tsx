@@ -88,6 +88,7 @@ interface ChannelDetailsState {
     isLocalArchived: boolean;
     showArchiveConfirmModal: boolean;
     policyToggled: boolean;
+    isReadOnly: boolean;
     accessControlPolicy?: AccessControlPolicy;
     accessControlPolicies: AccessControlPolicy[];
     accessControlPoliciesToRemove: string[];
@@ -154,6 +155,7 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
             isSynced: Boolean(props.channel?.group_constrained),
             isPublic: props.channel?.type === Constants.OPEN_CHANNEL,
             isDefault: props.channel?.name === Constants.DEFAULT_CHANNEL,
+            isReadOnly: Boolean(props.channel?.read_only),
             isPrivacyChanging: false,
             saving: false,
             totalGroups: props.totalGroups,
@@ -206,6 +208,7 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
                 isDefault: channel?.name === Constants.DEFAULT_CHANNEL,
                 isLocalArchived: channel?.delete_at !== 0,
                 policyToggled: channel?.policy_enforced || false,
+                isReadOnly: Boolean(channel?.read_only),
             });
 
             // Load user attributes and policies if ABAC is supported
@@ -304,6 +307,11 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
             },
             () => this.processGroupsChange(this.state.groups),
         );
+        this.props.actions.setNavigationBlocked(true);
+    };
+
+    private setReadOnlyToggle = () => {
+        this.setState((prevState) => ({isReadOnly: !prevState.isReadOnly, saveNeeded: true}));
         this.props.actions.setNavigationBlocked(true);
     };
 
@@ -496,7 +504,7 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
         }
 
         this.setState({showConvertConfirmModal: false, showRemoveConfirmModal: false, showConvertAndRemoveConfirmModal: false, showArchiveConfirmModal: false, saving: true});
-        const {groups, isSynced, isPublic, isPrivacyChanging, channelPermissions, usersToAdd, usersToRemove, rolesToUpdate, policyToggled, accessControlPolicies, accessControlPoliciesToRemove} = this.state;
+        const {groups, isSynced, isPublic, isPrivacyChanging, channelPermissions, usersToAdd, usersToRemove, rolesToUpdate, policyToggled, accessControlPolicies, accessControlPoliciesToRemove, isReadOnly} = this.state;
         let serverError: JSX.Element | undefined;
         let saveNeeded = false;
 
@@ -560,6 +568,7 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
         // Then patch the channel
         const patchResult = await actions.patchChannel(channel.id, {
             group_constrained: isSynced,
+            read_only: isReadOnly,
         });
 
         if ('error' in patchResult) {
@@ -1312,6 +1321,7 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
             showArchiveConfirmModal,
             policyToggled,
             accessControlPolicies,
+            isReadOnly,
         } = this.state;
         const {channel, team} = this.props;
 
@@ -1381,6 +1391,8 @@ export default class ChannelDetails extends React.PureComponent<ChannelDetailsPr
                     abacSupported={this.props.abacSupported}
                     policyEnforced={policyToggled}
                     policyEnforcedToggleAvailable={accessControlPolicies.length === 0}
+                    isReadOnly={isReadOnly}
+                    onReadOnlyToggle={this.setReadOnlyToggle}
                 />
 
                 {this.props.abacSupported && policyToggled && (

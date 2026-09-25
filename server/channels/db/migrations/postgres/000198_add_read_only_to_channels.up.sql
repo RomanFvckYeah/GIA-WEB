@@ -1,0 +1,1 @@
+ALTER TABLE Channels ADD COLUMN IF NOT EXISTS ReadOnly boolean NOT NULL DEFAULT false;

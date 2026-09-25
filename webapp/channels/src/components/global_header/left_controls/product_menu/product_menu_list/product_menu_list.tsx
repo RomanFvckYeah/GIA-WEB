@@ -8,6 +8,7 @@ import {useSelector} from 'react-redux';
 import {
     AccountMultipleOutlineIcon,
     ApplicationCogIcon,
+    ChartBarIcon,
     DownloadOutlineIcon,
     InformationOutlineIcon,
     ViewGridPlusOutlineIcon,
@@ -16,6 +17,7 @@ import {
 import type {UserProfile} from '@mattermost/types/users';
 
 import {Permissions} from 'mattermost-redux/constants';
+import {isCurrentUserCurrentTeamAdmin} from 'mattermost-redux/selectors/entities/teams';
 import {isCurrentUserSystemAdmin} from 'mattermost-redux/selectors/entities/users';
 
 import AboutBuildModal from 'components/about_build_modal';
@@ -88,6 +90,7 @@ const ProductMenuList = (props: Props): JSX.Element | null => {
     } = props;
     const {formatMessage} = useIntl();
     const isAdmin = useSelector(isCurrentUserSystemAdmin);
+    const isCurrentTeamAdmin = useSelector(isCurrentUserCurrentTeamAdmin);
 
     useEffect(() => {
         props.actions.getPrevTrialLicense();
@@ -136,6 +139,13 @@ const ProductMenuList = (props: Props): JSX.Element | null => {
                         icon={<ApplicationCogIcon size={18}/>}
                     />
                 </SystemPermissionGate>
+                <Menu.ItemLink
+                    id='teamStatistics'
+                    show={isAdmin || isCurrentTeamAdmin}
+                    to={'/' + teamName + '/statistics'}
+                    text={formatMessage({id: 'navbar_dropdown.statistics', defaultMessage: 'Statistics'})}
+                    icon={<ChartBarIcon size={18}/>}
+                />
                 <Menu.ItemLink
                     id='integrations'
                     show={isMessaging && showIntegrations}

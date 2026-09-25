@@ -186,11 +186,6 @@ exports[`components/global/product_switcher should have an active button state w
           <div
             data-testid="product-menu-list"
           />
-          <li
-            class="MenuGroup menu-divider"
-            role="separator"
-            style="display: none;"
-          />
         </ul>
       </div>
     </div>
@@ -462,11 +457,6 @@ exports[`components/global/product_switcher should match snapshot with product s
           <div
             data-testid="product-menu-list"
           />
-          <li
-            class="MenuGroup menu-divider"
-            role="separator"
-            style="display: none;"
-          />
         </ul>
       </div>
     </div>
@@ -699,11 +689,6 @@ exports[`components/global/product_switcher should render once when there are no
           <div
             data-testid="product-menu-list"
           />
-          <li
-            class="MenuGroup menu-divider"
-            role="separator"
-            style="display: none;"
-          />
         </ul>
       </div>
     </div>
@@ -896,11 +881,6 @@ exports[`components/global/product_switcher should render the correct amount of 
           </a>
           <div
             data-testid="product-menu-list"
-          />
-          <li
-            class="MenuGroup menu-divider"
-            role="separator"
-            style="display: none;"
           />
         </ul>
       </div>

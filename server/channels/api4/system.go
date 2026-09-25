@@ -499,7 +499,11 @@ func getAnalytics(c *Context, w http.ResponseWriter, r *http.Request) {
 		name = "standard"
 	}
 
-	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionGetAnalytics) {
+	hasSystemPermission := c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionGetAnalytics)
+	hasTeamPermission := !hasSystemPermission && teamId != "" &&
+		c.App.SessionHasPermissionToTeam(*c.AppContext.Session(), teamId, model.PermissionGetAnalytics)
+
+	if !hasSystemPermission && !hasTeamPermission {
 		c.SetPermissionError(model.PermissionGetAnalytics)
 		return
 	}

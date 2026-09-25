@@ -48,6 +48,12 @@ exports[`admin_console/system_user_detail/team_list/TeamList should match snapsh
       </div>
       <div
         class="AbstractList__header-label"
+        style="width: 110px;"
+      >
+        Organization
+      </div>
+      <div
+        class="AbstractList__header-label"
         style="width: 150px;"
       />
     </div>

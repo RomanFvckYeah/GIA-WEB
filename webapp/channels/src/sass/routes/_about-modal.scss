@@ -8,6 +8,38 @@
     }
 
     .about-modal {
+        // The logo GIA uses here (LogoGIAWhite.png) is a white icon meant for a dark
+        // background, so the modal is recolored to the brand navy to match. !important
+        // is needed since these elements set their own color/background further up
+        // the Bootstrap modal cascade (.app__body .modal .modal-content, .close, etc.)
+        // with equal or higher selector specificity.
+        .modal-content {
+            background-color: #040836 !important;
+            color: #fff !important;
+        }
+
+        .modal-title {
+            color: #fff !important;
+        }
+
+        .close {
+            color: rgba(255, 255, 255, 0.64) !important;
+
+            &:hover,
+            &:focus {
+                color: rgba(255, 255, 255, 0.8) !important;
+            }
+        }
+
+        a {
+            color: #fff !important;
+
+            &:hover,
+            &:focus {
+                color: #fff !important;
+            }
+        }
+
         .modal-body {
             max-height: calc(100vh - 220px);
             padding: 16px 32px;
@@ -112,13 +144,9 @@
             padding: 0 40px 0 20px;
             opacity: 0.9;
 
-            svg {
-                width: 125px;
-                height: 125px;
-            }
-
-            path {
-                fill: inherit;
+            .about-modal__logo-image {
+                width: 90px;
+                height: 90px;
             }
         }
 

@@ -27,6 +27,7 @@ import AdminUserCard from 'components/admin_console/admin_user_card/admin_user_c
 import BlockableLink from 'components/admin_console/blockable_link';
 import ResetPasswordModal from 'components/admin_console/reset_password_modal';
 import TeamList from 'components/admin_console/system_user_detail/team_list';
+import OrgOnlyTeamsList from 'components/admin_console/system_user_detail/team_list/org_only_teams_list';
 import ConfirmManageUserSettingsModal from 'components/admin_console/system_users/system_users_list_actions/confirm_manage_user_settings_modal';
 import ConfirmModal from 'components/confirm_modal';
 import FormError from 'components/form_error';
@@ -126,6 +127,9 @@ export type State = {
     usernameError: string | null;
     emailField: string;
     emailError: string | null;
+    firstNameField: string;
+    lastNameField: string;
+    positionField: string;
     authDataField: string;
     authDataError: string | null;
     confirmPassword: string;
@@ -154,6 +158,9 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             usernameError: null,
             emailField: '',
             emailError: null,
+            firstNameField: '',
+            lastNameField: '',
+            positionField: '',
             authDataField: '',
             authDataError: null,
             confirmPassword: '',
@@ -190,6 +197,9 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                     user: userResult.data,
                     emailField: userResult.data.email, // Set emailField to the email of the user for editing purposes
                     usernameField: userResult.data.username,
+                    firstNameField: userResult.data.first_name,
+                    lastNameField: userResult.data.last_name,
+                    positionField: userResult.data.position,
                     authDataField: userResult.data.auth_data || '',
                     customProfileAttributeValues: cpaValues,
                     originalCpaValues: {...cpaValues}, // Deep copy for change tracking
@@ -263,10 +273,13 @@ export class SystemUserDetail extends PureComponent<Props, State> {
 
         const emailChanged = state.emailField !== state.user.email;
         const usernameChanged = state.usernameField !== state.user.username;
+        const firstNameChanged = state.firstNameField !== (state.user.first_name || '');
+        const lastNameChanged = state.lastNameField !== (state.user.last_name || '');
+        const positionChanged = state.positionField !== (state.user.position || '');
         const authDataChanged = state.authDataField !== (state.user.auth_data || '');
         const cpaChanged = this.hasCpaChanges(state);
 
-        return emailChanged || usernameChanged || authDataChanged || cpaChanged;
+        return emailChanged || usernameChanged || firstNameChanged || lastNameChanged || positionChanged || authDataChanged || cpaChanged;
     };
 
     private hasCpaChanges = (state: State = this.state): boolean => {
@@ -496,6 +509,39 @@ export class SystemUserDetail extends PureComponent<Props, State> {
         });
     };
 
+    handleFirstNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (!this.state.user) {
+            return;
+        }
+
+        this.setState({
+            firstNameField: event.target.value,
+            error: null,
+        });
+    };
+
+    handleLastNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (!this.state.user) {
+            return;
+        }
+
+        this.setState({
+            lastNameField: event.target.value,
+            error: null,
+        });
+    };
+
+    handlePositionChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (!this.state.user) {
+            return;
+        }
+
+        this.setState({
+            positionField: event.target.value,
+            error: null,
+        });
+    };
+
     handleAuthDataChange = (event: ChangeEvent<HTMLInputElement>) => {
         if (!this.state.user) {
             return;
@@ -669,6 +715,46 @@ export class SystemUserDetail extends PureComponent<Props, State> {
 
         // Add system fields
         fields.push(
+            <label key='firstName'>
+                <FormattedMessage
+                    id='admin.userManagement.userDetail.firstName'
+                    defaultMessage='First Name'
+                />
+                <input
+                    className='form-control'
+                    type='text'
+                    value={this.state.firstNameField}
+                    onChange={this.handleFirstNameChange}
+                    disabled={this.state.isSaving}
+                    placeholder={this.props.intl.formatMessage({
+                        id: 'admin.userManagement.userDetail.firstName.input',
+                        defaultMessage: 'Enter first name',
+                    })}
+                />
+            </label>,
+        );
+
+        fields.push(
+            <label key='lastName'>
+                <FormattedMessage
+                    id='admin.userManagement.userDetail.lastName'
+                    defaultMessage='Last Name'
+                />
+                <input
+                    className='form-control'
+                    type='text'
+                    value={this.state.lastNameField}
+                    onChange={this.handleLastNameChange}
+                    disabled={this.state.isSaving}
+                    placeholder={this.props.intl.formatMessage({
+                        id: 'admin.userManagement.userDetail.lastName.input',
+                        defaultMessage: 'Enter last name',
+                    })}
+                />
+            </label>,
+        );
+
+        fields.push(
             <label key='username'>
                 <FormattedMessage
                     id='admin.userManagement.userDetail.username'
@@ -838,6 +924,26 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             );
         }
 
+        fields.push(
+            <label key='position'>
+                <FormattedMessage
+                    id='admin.userManagement.userDetail.position'
+                    defaultMessage='Position'
+                />
+                <input
+                    className='form-control'
+                    type='text'
+                    value={this.state.positionField}
+                    onChange={this.handlePositionChange}
+                    disabled={this.state.isSaving}
+                    placeholder={this.props.intl.formatMessage({
+                        id: 'admin.userManagement.userDetail.position.input',
+                        defaultMessage: 'Enter position',
+                    })}
+                />
+            </label>,
+        );
+
         // Pad standard fields for even number
         if (fields.length % 2) {
             fields.push(null);
@@ -939,6 +1045,45 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                     values={{
                         oldEmail: this.state.user.email,
                         newEmail: this.state.emailField,
+                    }}
+                />,
+            );
+        }
+
+        if (this.state.user && this.state.firstNameField !== (this.state.user.first_name || '')) {
+            fields.push(
+                <FormattedMessage
+                    id='admin.userDetail.saveChangesModal.firstNameChange'
+                    defaultMessage='First Name: {oldFirstName} → {newFirstName}'
+                    values={{
+                        oldFirstName: this.state.user.first_name || '(empty)',
+                        newFirstName: this.state.firstNameField || '(empty)',
+                    }}
+                />,
+            );
+        }
+
+        if (this.state.user && this.state.lastNameField !== (this.state.user.last_name || '')) {
+            fields.push(
+                <FormattedMessage
+                    id='admin.userDetail.saveChangesModal.lastNameChange'
+                    defaultMessage='Last Name: {oldLastName} → {newLastName}'
+                    values={{
+                        oldLastName: this.state.user.last_name || '(empty)',
+                        newLastName: this.state.lastNameField || '(empty)',
+                    }}
+                />,
+            );
+        }
+
+        if (this.state.user && this.state.positionField !== (this.state.user.position || '')) {
+            fields.push(
+                <FormattedMessage
+                    id='admin.userDetail.saveChangesModal.positionChange'
+                    defaultMessage='Position: {oldPosition} → {newPosition}'
+                    values={{
+                        oldPosition: this.state.user.position || '(empty)',
+                        newPosition: this.state.positionField || '(empty)',
                     }}
                 />,
             );
@@ -1105,17 +1250,33 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             // Track what changes are being made
             const emailChanged = !this.state.user.auth_service && this.state.emailField !== this.state.user.email;
             const usernameChanged = !this.state.user.auth_service && this.state.usernameField !== this.state.user.username;
+            const firstNameChanged = this.state.firstNameField !== (this.state.user.first_name || '');
+            const lastNameChanged = this.state.lastNameField !== (this.state.user.last_name || '');
+            const positionChanged = this.state.positionField !== (this.state.user.position || '');
+            const profileFieldsChanged = usernameChanged || emailChanged || firstNameChanged || lastNameChanged || positionChanged;
             const authDataChanged = this.state.authDataField !== (this.state.user.auth_data || '');
             const cpaChanged = this.hasCpaChanges();
 
-            // Update user profile if email or username changed
-            if (usernameChanged || emailChanged) {
+            // Update user profile if any of the profile fields changed
+            if (profileFieldsChanged) {
                 if (emailChanged) {
                     updatedUser.email = this.state.emailField.trim().toLowerCase();
                 }
 
                 if (usernameChanged) {
                     updatedUser.username = this.state.usernameField.trim();
+                }
+
+                if (firstNameChanged) {
+                    updatedUser.first_name = this.state.firstNameField.trim();
+                }
+
+                if (lastNameChanged) {
+                    updatedUser.last_name = this.state.lastNameField.trim();
+                }
+
+                if (positionChanged) {
+                    updatedUser.position = this.state.positionField.trim();
                 }
 
                 // If editing own email, include password for verification
@@ -1156,8 +1317,8 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             // Handle results
             let resultIndex = 0;
 
-            // Handle user update result if email or username changed
-            if (emailChanged || usernameChanged) {
+            // Handle user update result if any profile field changed
+            if (profileFieldsChanged) {
                 const userResult = results[resultIndex] as ActionResult<UserProfile, ServerError>;
                 if (userResult.data) {
                     updatedUser = userResult.data;
@@ -1220,6 +1381,9 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                 usernameError: null,
                 emailField: updatedUser.email,
                 emailError: null,
+                firstNameField: updatedUser.first_name,
+                lastNameField: updatedUser.last_name,
+                positionField: updatedUser.position,
                 authDataField: updatedUser.auth_data || '',
                 authDataError: null,
                 customProfileAttributeValues: freshCpaValues,
@@ -1354,7 +1518,6 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                             isLoading={this.state.isLoading}
                             body={
                                 <>
-                                    <span>{this.state.user?.position ?? ''}</span>
                                     {this.renderTwoColumnLayout()}
                                 </>
                             }
@@ -1498,6 +1661,10 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                                 />
                             )}
                         </AdminPanel>
+
+                        {!this.state.isLoading && this.state.user?.id && (
+                            <OrgOnlyTeamsList userId={this.state.user.id}/>
+                        )}
                     </div>
                 </div>
 

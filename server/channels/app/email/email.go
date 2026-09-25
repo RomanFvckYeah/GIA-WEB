@@ -241,6 +241,60 @@ func (es *Service) SendWelcomeEmail(userID string, email string, verified bool, 
 	return nil
 }
 
+// SendAccountCredentialsEmail emails a freshly-provisioned user the credentials an
+// admin created for them (server URL, login id and the plaintext password), a
+// "sign in" button and text links to download the mobile apps. It is only used by
+// the team_statistics "Create User" flow when the admin opts in — the password is
+// known only at that call site, before it is hashed.
+func (es *Service) SendAccountCredentialsEmail(email, loginId, password, locale, siteURL string) error {
+	// Deliberately not gated on EmailSettings.SendEmailNotifications: this is a
+	// transactional message an admin explicitly asked to send (like the password
+	// reset email, which is also ungated), not an activity notification.
+	T := i18n.GetUserTranslations(locale)
+
+	serverURL := condenseSiteURL(siteURL)
+
+	subject := T("api.templates.account_credentials_subject",
+		map[string]any{"SiteName": es.config().TeamSettings.SiteName})
+
+	data := es.NewEmailTemplateData(locale)
+	data.Props["SiteURL"] = siteURL
+	data.Props["Title"] = T("api.templates.account_credentials_body.title")
+	data.Props["Info"] = T("api.templates.account_credentials_body.info",
+		map[string]any{"SiteName": es.config().TeamSettings.SiteName})
+	data.Props["Info1"] = T("api.templates.account_credentials_body.info1")
+	data.Props["LabelServer"] = T("api.templates.account_credentials_body.label_server")
+	data.Props["LabelLogin"] = T("api.templates.account_credentials_body.label_login")
+	data.Props["LabelPassword"] = T("api.templates.account_credentials_body.label_password")
+	data.Props["ServerURL"] = serverURL
+	data.Props["LoginId"] = loginId
+	data.Props["Password"] = password
+	data.Props["Button"] = T("api.templates.account_credentials_body.button")
+	data.Props["ButtonURL"] = siteURL
+
+	iosLink := *es.config().NativeAppSettings.IosAppDownloadLink
+	androidLink := *es.config().NativeAppSettings.AndroidAppDownloadLink
+	if iosLink != "" || androidLink != "" {
+		data.Props["AppDownloadTitle"] = T("api.templates.account_credentials_body.app_download_title")
+		data.Props["AppDownloadInfo"] = T("api.templates.account_credentials_body.app_download_info")
+		data.Props["IosAppDownloadLink"] = iosLink
+		data.Props["IosAppDownloadButton"] = T("api.templates.account_credentials_body.download_ios")
+		data.Props["AndroidAppDownloadLink"] = androidLink
+		data.Props["AndroidAppDownloadButton"] = T("api.templates.account_credentials_body.download_android")
+	}
+
+	body, err := es.templatesContainer.RenderToString("account_credentials_body", data)
+	if err != nil {
+		return err
+	}
+
+	if err := es.sendMail(email, subject, body, "AccountCredentialsEmail"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SendCloudWelcomeEmail sends the cloud version of the welcome email
 func (es *Service) SendCloudWelcomeEmail(userEmail, locale, teamInviteID, workSpaceName, dns, siteURL string) error {
 	T := i18n.GetUserTranslations(locale)

@@ -57,6 +57,7 @@ const ShouldVerifyEmail = makeAsyncComponent('ShouldVerifyEmail', lazy(() => imp
 const DoVerifyEmail = makeAsyncComponent('DoVerifyEmail', lazy(() => import('components/do_verify_email/do_verify_email')));
 const ClaimController = makeAsyncComponent('ClaimController', lazy(() => import('components/claim')));
 const TermsOfService = makeAsyncComponent('TermsOfService', lazy(() => import('components/terms_of_service')));
+const PanicRestricted = makeAsyncComponent('PanicRestricted', lazy(() => import('components/panic_restricted/panic_restricted')));
 const LinkingLandingPage = makeAsyncComponent('LinkingLandingPage', lazy(() => import('components/linking_landing_page')));
 const AdminConsole = makeAsyncComponent('AdminConsole', lazy(() => import('components/admin_console')));
 const SelectTeam = makeAsyncComponent('SelectTeam', lazy(() => import('components/select_team')));
@@ -138,8 +139,8 @@ export default class Root extends React.PureComponent<Props, State> {
             return;
         }
 
-        // Nothing to link to if we've removed the Desktop App download link
-        if (!this.props.appDownloadLink) {
+        // Nothing to link to if we've removed all the app download links
+        if (!this.props.appDownloadLink && !this.props.androidDownloadLink && !this.props.iosDownloadLink) {
             return;
         }
 
@@ -346,6 +347,10 @@ export default class Root extends React.PureComponent<Props, State> {
                     <LoggedInRoute
                         path={'/terms_of_service'}
                         component={TermsOfService}
+                    />
+                    <LoggedInRoute
+                        path={'/panic_restricted'}
+                        component={PanicRestricted}
                     />
                     <Route
                         path={'/help/:page?'}

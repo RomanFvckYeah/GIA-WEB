@@ -18,12 +18,37 @@
         width: 100%;
         height: 100vh;
         flex-flow: column;
-        background-image: url("images/admin-onboarding-background.jpg");
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: cover;
+        background-color: #040836;
         // MM-45313 - Hack for issue in iOS Safari with scrolling
         -webkit-overflow-scrolling: touch;
         overflow-y: auto;
+    }
+
+    // Text and links outside the form card sit on the dark background above,
+    // so they need to stay white regardless of the design tokens used inside the card.
+    // !important is needed here since the page-specific stylesheets (login.scss, signup.scss,
+    // footer.scss, ...) nest these selectors more deeply and would otherwise win the cascade.
+    .login-body-message-title,
+    .login-body-message-subtitle,
+    .signup-body-message-title,
+    .signup-body-message-subtitle,
+    .signup-body-no-login-title,
+    .signup-body-no-login-subtitle,
+    .content-layout-column-title,
+    .content-layout-column-message,
+    .alternate-link__message,
+    .footer-copyright {
+        color: #fff !important;
+    }
+
+    .alternate-link__link,
+    .footer-link {
+        color: #fff !important;
+
+        &:hover,
+        &:active,
+        &:focus {
+            color: #fff !important;
+        }
     }
 }

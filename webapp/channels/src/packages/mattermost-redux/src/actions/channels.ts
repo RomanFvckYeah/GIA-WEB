@@ -33,6 +33,7 @@ import {
 } from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import type {GetStateFunc, ActionFunc, ActionFuncAsync} from 'mattermost-redux/types/actions';
+import {getUserIdFromChannelName} from 'mattermost-redux/utils/channel_utils';
 import {DelayedDataLoader} from 'mattermost-redux/utils/data_loader';
 
 import {addChannelToInitialCategory, addChannelToCategory} from './channel_categories';
@@ -1456,14 +1457,40 @@ export function fetchMissingChannels(channelIDs: string[], asContentReviewer = f
     };
 }
 
-export function fetchIsRestrictedDM(channelId: string) {
-    return bindClientFunc({
-        clientFunc: async () => {
+export function fetchIsRestrictedDM(channelId: string): ActionFuncAsync<{channelId: string; isRestricted: boolean}> {
+    return async (dispatch, getState) => {
+        let isRestricted: boolean;
+        try {
             const teams = (await Client4.getGroupMessageMembersCommonTeams(channelId)).data;
-            return {channelId, isRestricted: teams.length === 0};
-        },
-        onSuccess: ChannelTypes.RECEIVED_IS_DM_RESTRICTED,
-    });
+            isRestricted = teams.length === 0;
+
+            // A direct message exception, or either user being globally discoverable, grants
+            // the ability to post despite sharing no "common team" per se.
+            if (isRestricted) {
+                const state = getState();
+                const channel = getChannelSelector(state, channelId);
+                if (channel && channel.type === General.DM_CHANNEL) {
+                    const currentUserId = state.entities.users.currentUserId;
+                    const otherUserId = getUserIdFromChannelName(currentUserId, channel.name);
+                    const [partnerIds, discoverableIds] = await Promise.all([
+                        Client4.getMyDirectMessageExceptionPartners(),
+                        Client4.getGloballyDiscoverableUsers(),
+                    ]);
+                    if (partnerIds.includes(otherUserId) || discoverableIds.includes(otherUserId) || discoverableIds.includes(currentUserId)) {
+                        isRestricted = false;
+                    }
+                }
+            }
+        } catch (error) {
+            forceLogoutIfNecessary(error, dispatch, getState);
+            dispatch(logError(error));
+            return {error};
+        }
+
+        const data = {channelId, isRestricted};
+        dispatch({type: ChannelTypes.RECEIVED_IS_DM_RESTRICTED, data});
+        return {data};
+    };
 }
 
 export function getChannelAccessControlAttributes(channelId: string): ActionFuncAsync<AccessControlAttributes> {

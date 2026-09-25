@@ -45,6 +45,8 @@ func MakeWorker(jobServer *jobs.JobServer, store store.Store, app ExportUsersToC
 			"TotalPosts",
 			"ChannelCount",
 			"DeletedAt",
+			"TeamCount",
+			"PanicButtonOnly",
 		},
 		getData(app),
 	)

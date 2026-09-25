@@ -2097,14 +2097,19 @@ func (us SqlUserStore) GetChannelGroupUsers(channelID string) ([]*model.User, er
 	return users, nil
 }
 
+// globallyDiscoverableUsersCondition matches any row in Users whose Id has been designated by a
+// system_admin as visible to every team on the server (see the GloballyDiscoverableUsers table),
+// so such users bypass the team/channel view restrictions below.
+var globallyDiscoverableUsersCondition = sq.Expr("Users.Id IN (SELECT UserId FROM GloballyDiscoverableUsers)")
+
 func applyViewRestrictionsFilter(query sq.SelectBuilder, restrictions *model.ViewUsersRestrictions, distinct bool) sq.SelectBuilder {
 	if restrictions == nil {
 		return query
 	}
 
-	// If you have no access to teams or channels, return and empty result.
+	// If you have no access to teams or channels, only globally discoverable users are visible.
 	if restrictions.Teams != nil && len(restrictions.Teams) == 0 && restrictions.Channels != nil && len(restrictions.Channels) == 0 {
-		return query.Where("1 = 0")
+		return query.Where(globallyDiscoverableUsersCondition)
 	}
 
 	teams := make([]any, len(restrictions.Teams))
@@ -2116,12 +2121,18 @@ func applyViewRestrictionsFilter(query sq.SelectBuilder, restrictions *model.Vie
 		channels[i] = v
 	}
 	resultQuery := query
+	var restrictionConds sq.And
 	if len(restrictions.Teams) > 0 {
-		resultQuery = resultQuery.Join(fmt.Sprintf("TeamMembers rtm ON ( rtm.UserId = Users.Id AND rtm.DeleteAt = 0 AND rtm.TeamId IN (%s))", sq.Placeholders(len(teams))), teams...)
+		resultQuery = resultQuery.LeftJoin(fmt.Sprintf("TeamMembers rtm ON ( rtm.UserId = Users.Id AND rtm.DeleteAt = 0 AND rtm.TeamId IN (%s))", sq.Placeholders(len(teams))), teams...)
+		restrictionConds = append(restrictionConds, sq.Expr("rtm.UserId IS NOT NULL"))
 	}
 	if len(restrictions.Channels) > 0 {
-		resultQuery = resultQuery.Join(fmt.Sprintf("ChannelMembers rcm ON ( rcm.UserId = Users.Id AND rcm.ChannelId IN (%s))", sq.Placeholders(len(channels))), channels...)
+		resultQuery = resultQuery.LeftJoin(fmt.Sprintf("ChannelMembers rcm ON ( rcm.UserId = Users.Id AND rcm.ChannelId IN (%s))", sq.Placeholders(len(channels))), channels...)
+		restrictionConds = append(restrictionConds, sq.Expr("rcm.UserId IS NOT NULL"))
 	}
+	// Original behavior (team match AND channel match, when both restrictions are present) is
+	// preserved via restrictionConds; globally discoverable users additionally bypass it entirely.
+	resultQuery = resultQuery.Where(sq.Or{globallyDiscoverableUsersCondition, restrictionConds})
 
 	if distinct {
 		return resultQuery.Distinct()
@@ -2445,6 +2456,8 @@ func (us SqlUserStore) GetUserReport(filter *model.UserReportOptions) ([]*model.
 		"COUNT(ps.Day) AS DaysActive",
 		"SUM(ps.NumPosts) AS TotalPosts",
 		"(SELECT COUNT(*) FROM ChannelMembers cm INNER JOIN Channels c ON c.Id = cm.ChannelId AND c.DeleteAt = 0 AND c.Type IN ('O','P') WHERE cm.UserId = Users.Id) AS ChannelCount",
+		"(SELECT COUNT(*) FROM TeamMembers tmc WHERE tmc.UserId = Users.Id AND tmc.DeleteAt = 0) AS TeamCount",
+		"EXISTS(SELECT 1 FROM PanicButtonOnlyUsers pbo WHERE pbo.UserId = Users.Id) AS PanicButtonOnly",
 	)
 
 	sortDirection := "ASC"
@@ -2521,7 +2534,7 @@ func (us SqlUserStore) GetUserReport(filter *model.UserReportOptions) ([]*model.
 		}
 
 		parentQuery = us.getQueryBuilder().
-			Select(getUsersColumnsWithName("data", "LastStatusAt", "LastPostDate", "DaysActive", "TotalPosts", "ChannelCount")...).
+			Select(getUsersColumnsWithName("data", "LastStatusAt", "LastPostDate", "DaysActive", "TotalPosts", "ChannelCount", "TeamCount", "PanicButtonOnly")...).
 			FromSelect(query, "data").
 			OrderBy(filter.SortColumn+" "+reverseSortDirection, "Id")
 	}

@@ -353,6 +353,62 @@ func TestCreatePost(t *testing.T) {
 		require.Nil(t, appErr)
 		require.Zero(t, *createdPost.RemoteId)
 	})
+	t.Run("read-only channel blocks non-admins from posting", func(t *testing.T) {
+		channel := th.CreatePublicChannel(t)
+
+		regularUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, regularUser, th.BasicTeam)
+		th.AddUserToChannel(t, regularUser, channel)
+
+		teamAdminUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, teamAdminUser, th.BasicTeam)
+		th.UpdateUserToTeamAdmin(t, teamAdminUser, th.BasicTeam)
+		th.AddUserToChannel(t, teamAdminUser, channel)
+
+		channelAdminUser := th.CreateUser(t)
+		th.LinkUserToTeam(t, channelAdminUser, th.BasicTeam)
+		th.AddUserToChannel(t, channelAdminUser, channel)
+		th.MakeUserChannelAdmin(t, channelAdminUser, channel)
+
+		th.AddUserToChannel(t, th.SystemAdminUser, channel)
+
+		_, resp, err := th.SystemAdminClient.PatchChannel(context.Background(), channel.Id, &model.ChannelPatch{ReadOnly: model.NewPointer(true)})
+		require.NoError(t, err)
+		CheckOKStatus(t, resp)
+
+		newPost := func() *model.Post {
+			return &model.Post{ChannelId: channel.Id, Message: "hello " + model.NewId()}
+		}
+
+		_, _, err = client.Login(context.Background(), regularUser.Email, regularUser.Password)
+		require.NoError(t, err)
+		_, resp, err = client.CreatePost(context.Background(), newPost())
+		require.Error(t, err)
+		CheckForbiddenStatus(t, resp)
+		_, err = client.Logout(context.Background())
+		require.NoError(t, err)
+
+		for _, u := range []*model.User{teamAdminUser, channelAdminUser} {
+			_, _, err := client.Login(context.Background(), u.Email, u.Password)
+			require.NoError(t, err)
+
+			rpost, resp, err := client.CreatePost(context.Background(), newPost())
+			require.NoError(t, err)
+			CheckCreatedStatus(t, resp)
+			require.NotNil(t, rpost)
+
+			_, err = client.Logout(context.Background())
+			require.NoError(t, err)
+		}
+
+		sysAdminPost, resp, err := th.SystemAdminClient.CreatePost(context.Background(), newPost())
+		require.NoError(t, err)
+		CheckCreatedStatus(t, resp)
+		require.NotNil(t, sysAdminPost)
+
+		th.LoginBasic(t)
+	})
+
 	t.Run("not logged in", func(t *testing.T) {
 		resp, err := client.Logout(context.Background())
 		require.NoError(t, err)

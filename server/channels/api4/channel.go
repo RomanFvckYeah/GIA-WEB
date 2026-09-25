@@ -356,8 +356,9 @@ func patchChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 	updatingProperties := patch.DisplayName != nil || patch.Name != nil || patch.Header != nil || patch.Purpose != nil || patch.GroupConstrained != nil
 	updatingAutoTranslation := patch.AutoTranslation != nil
 	updatingManagedCategory := patch.ManagedCategoryName != nil
+	updatingReadOnly := patch.ReadOnly != nil
 
-	if !updatingProperties && !updatingAutoTranslation && patch.BannerInfo == nil && !updatingManagedCategory {
+	if !updatingProperties && !updatingAutoTranslation && patch.BannerInfo == nil && !updatingManagedCategory && !updatingReadOnly {
 		c.Err = model.NewAppError("patchChannel", "api.channel.patch_update_channel.no_changes.app_error", nil, "", http.StatusBadRequest)
 		return
 	}
@@ -431,6 +432,13 @@ func patchChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	if patch.BannerInfo != nil {
 		canEditChannelBanner(c, originalOldChannel)
+		if c.Err != nil {
+			return
+		}
+	}
+
+	if updatingReadOnly {
+		canEditChannelReadOnly(c, originalOldChannel)
 		if c.Err != nil {
 			return
 		}
@@ -1418,12 +1426,22 @@ func searchAllChannels(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !c.App.SessionHasPermissionToAny(*c.AppContext.Session(),
+	hasSysConsolePermission := c.App.SessionHasPermissionToAny(*c.AppContext.Session(),
 		[]*model.Permission{
 			model.PermissionSysconsoleWriteUserManagementGroups,
 			model.PermissionSysconsoleReadUserManagementChannels,
 			model.PermissionSysconsoleReadComplianceDataRetentionPolicy,
-		}) {
+		})
+
+	// Team admins don't hold the sysconsole permissions above (those are system-scoped
+	// and would let them list channels across every team). Instead, let a team admin
+	// through only when the request is pinned to the single team they administer, so the
+	// unfiltered-by-membership channel list (needed to see private channels they haven't
+	// joined) never crosses into another team's channels.
+	hasTeamAdminPermission := !hasSysConsolePermission && len(props.TeamIds) == 1 &&
+		c.App.SessionHasPermissionToTeam(*c.AppContext.Session(), props.TeamIds[0], model.PermissionManageTeam)
+
+	if !hasSysConsolePermission && !hasTeamAdminPermission {
 		c.SetPermissionError(model.PermissionSysconsoleReadUserManagementChannels)
 		return
 	}
@@ -2458,6 +2476,19 @@ func removeChannelMember(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// A system_admin marks specific (team, user) pairs as genuine organization members of
+	// that team — e.g. to distinguish a client's own staff from central-org staff added to
+	// their team just to provide support. team_admin's manage_{public,private}_channel_members
+	// permission checked above doesn't account for this, so it's enforced separately: a
+	// team_admin may only remove a member they share organization membership with.
+	if c.Params.UserId != c.AppContext.Session().UserId &&
+		!c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) &&
+		(!c.App.IsUserOrgMemberOfTeam(c.AppContext, channel.TeamId, c.Params.UserId) ||
+			!c.App.IsUserOrgMemberOfTeam(c.AppContext, channel.TeamId, c.AppContext.Session().UserId)) {
+		c.Err = model.NewAppError("removeChannelMember", "api.channel.remove_channel_member.not_same_organization.app_error", nil, "", http.StatusForbidden)
+		return
+	}
+
 	if err = c.App.RemoveUserFromChannel(c.AppContext, c.Params.UserId, c.AppContext.Session().UserId, channel); err != nil {
 		c.Err = err
 		return
@@ -2903,6 +2934,22 @@ func canEditChannelBanner(c *Context, originalChannel *model.Channel) {
 		}
 	default:
 		c.Err = model.NewAppError("patchChannel", "api.channel.update_channel.banner_info.channel_type.not_allowed", nil, "", http.StatusBadRequest)
+	}
+}
+
+// canEditChannelReadOnly gates the read-only flag to system_admin only, on Open/Private channels.
+// Deliberately has no license check, unlike canEditChannelBanner: read-only channels are not an
+// Enterprise-licensed feature in this fork.
+func canEditChannelReadOnly(c *Context, originalChannel *model.Channel) {
+	switch originalChannel.Type {
+	case model.ChannelTypeOpen, model.ChannelTypePrivate:
+	default:
+		c.Err = model.NewAppError("patchChannel", "api.channel.patch_update_channel.read_only.channel_type.not_allowed", nil, "", http.StatusBadRequest)
+		return
+	}
+
+	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		c.SetPermissionError(model.PermissionManageSystem)
 	}
 }
 

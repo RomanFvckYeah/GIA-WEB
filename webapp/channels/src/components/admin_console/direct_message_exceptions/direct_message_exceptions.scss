@@ -1,0 +1,119 @@
+.DirectMessageExceptions {
+    .DirectMessageExceptions__tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+    }
+
+    .DirectMessageExceptions__tab {
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-weight: 600;
+        color: rgba(var(--center-channel-color-rgb), 0.72);
+        cursor: pointer;
+
+        &.active {
+            color: var(--button-bg);
+            border-bottom-color: var(--button-bg);
+        }
+    }
+
+    .DirectMessageExceptions__description {
+        color: rgba(var(--center-channel-color-rgb), 0.72);
+        max-width: 720px;
+        margin-bottom: 16px;
+    }
+
+    .DirectMessageExceptions__addRow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .DirectMessageExceptions__and {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+    }
+
+    .DirectMessageExceptions__chip {
+        padding: 2px 10px;
+        border-radius: 12px;
+        background: rgba(var(--button-bg-rgb), 0.08);
+        color: var(--button-bg);
+        font-weight: 600;
+    }
+
+    .DirectMessageExceptions__error {
+        color: var(--error-text);
+        margin-bottom: 12px;
+    }
+
+    .DirectMessageExceptions__empty {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+        padding: 16px 0;
+    }
+
+    .DirectMessageExceptions__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border: 1px solid rgba(var(--center-channel-color-rgb), 0.12);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+    }
+
+    .DirectMessageExceptions__userPicker {
+        position: relative;
+        width: 260px;
+
+        input {
+            width: 100%;
+        }
+    }
+
+    .DirectMessageExceptions__userPicker-results {
+        position: absolute;
+        z-index: 5;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--center-channel-bg);
+        border: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+        border-radius: 4px;
+        box-shadow: var(--elevation-3);
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    .DirectMessageExceptions__userPicker-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+
+        &:hover {
+            background: rgba(var(--center-channel-color-rgb), 0.08);
+        }
+    }
+
+    .DirectMessageExceptions__userPicker-username {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+    }
+
+    .DirectMessageExceptions__userPicker-empty {
+        padding: 8px 12px;
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+    }
+}

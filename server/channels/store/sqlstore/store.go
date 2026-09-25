@@ -117,6 +117,11 @@ type SqlStoreStores struct {
 	recap                      store.RecapStore
 	readReceipt                store.ReadReceiptStore
 	temporaryPost              store.TemporaryPostStore
+	teamOrganizationMember     store.TeamOrganizationMemberStore
+	directMessageException     store.DirectMessageExceptionStore
+	globallyDiscoverableUser   store.GloballyDiscoverableUserStore
+	panicButtonOnlyUser        store.PanicButtonOnlyUserStore
+	operationalTrackingGroup   store.OperationalTrackingGroupStore
 }
 
 type SqlStore struct {
@@ -308,6 +313,11 @@ func New(settings model.SqlSettings, logger mlog.LoggerIFace, metrics einterface
 	store.stores.recap = newSqlRecapStore(store)
 	store.stores.readReceipt = newSqlReadReceiptStore(store, metrics)
 	store.stores.temporaryPost = newSqlTemporaryPostStore(store, metrics)
+	store.stores.teamOrganizationMember = newSqlTeamOrganizationMemberStore(store)
+	store.stores.directMessageException = newSqlDirectMessageExceptionStore(store)
+	store.stores.globallyDiscoverableUser = newSqlGloballyDiscoverableUserStore(store)
+	store.stores.panicButtonOnlyUser = newSqlPanicButtonOnlyUserStore(store)
+	store.stores.operationalTrackingGroup = newSqlOperationalTrackingGroupStore(store)
 
 	store.stores.preference.(*SqlPreferenceStore).deleteUnusedFeatures()
 
@@ -922,6 +932,26 @@ func (ss *SqlStore) ReadReceipt() store.ReadReceiptStore {
 
 func (ss *SqlStore) TemporaryPost() store.TemporaryPostStore {
 	return ss.stores.temporaryPost
+}
+
+func (ss *SqlStore) TeamOrganizationMember() store.TeamOrganizationMemberStore {
+	return ss.stores.teamOrganizationMember
+}
+
+func (ss *SqlStore) DirectMessageException() store.DirectMessageExceptionStore {
+	return ss.stores.directMessageException
+}
+
+func (ss *SqlStore) GloballyDiscoverableUser() store.GloballyDiscoverableUserStore {
+	return ss.stores.globallyDiscoverableUser
+}
+
+func (ss *SqlStore) PanicButtonOnlyUser() store.PanicButtonOnlyUserStore {
+	return ss.stores.panicButtonOnlyUser
+}
+
+func (ss *SqlStore) OperationalTrackingGroup() store.OperationalTrackingGroupStore {
+	return ss.stores.operationalTrackingGroup
 }
 
 func (ss *SqlStore) DropAllTables() {

@@ -22,6 +22,7 @@ import {getHistory} from 'utils/browser_history';
 import {TeamGroups} from './team_groups';
 import TeamMembers from './team_members/index';
 import {TeamModes} from './team_modes';
+import {TeamOrganizationLimit} from './team_organization_limit';
 import {TeamProfile} from './team_profile';
 
 import SaveChangesPanel from '../../../save_changes_panel';
@@ -59,6 +60,7 @@ type State = {
     allAllowedChecked: boolean;
     allowedDomainsChecked: boolean;
     allowedDomains: string;
+    organizationMemberLimit: number;
     saving: boolean;
     showRemoveConfirmation: boolean;
     usersToRemoveCount: number;
@@ -92,6 +94,7 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
             allAllowedChecked: Boolean(team?.allow_open_invite),
             allowedDomainsChecked: Boolean(team?.allowed_domains),
             allowedDomains: team?.allowed_domains || '',
+            organizationMemberLimit: team?.organization_member_limit ?? 5,
             saving: false,
             showRemoveConfirmation: false,
             usersToRemoveCount: 0,
@@ -116,6 +119,7 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
                 allAllowedChecked: Boolean(team?.allow_open_invite),
                 allowedDomainsChecked: Boolean(team?.allowed_domains),
                 allowedDomains: team?.allowed_domains || '',
+                organizationMemberLimit: team?.organization_member_limit ?? 5,
                 isLocalArchived: team ? team.delete_at > 0 : true,
             });
         }
@@ -145,7 +149,7 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
         }
 
         this.setState({showRemoveConfirmation: false, saving: true});
-        const {groups, allAllowedChecked, allowedDomainsChecked, allowedDomains, syncChecked, usersToAdd, usersToRemove, rolesToUpdate} = this.state;
+        const {groups, allAllowedChecked, allowedDomainsChecked, allowedDomains, organizationMemberLimit, syncChecked, usersToAdd, usersToRemove, rolesToUpdate} = this.state;
 
         let serverError: JSX.Element | undefined;
 
@@ -204,6 +208,7 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
                 group_constrained: syncChecked,
                 allowed_domains: allowedDomainsChecked ? allowedDomains : '',
                 allow_open_invite: allAllowedChecked,
+                organization_member_limit: organizationMemberLimit,
             });
 
             if (patchTeamResult.error) {
@@ -296,6 +301,11 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
                 getHistory().push('/admin_console/user_management/teams');
             }
         });
+    };
+
+    setOrganizationMemberLimit = (organizationMemberLimit: number) => {
+        this.setState({organizationMemberLimit, saveNeeded: true});
+        this.props.actions.setNavigationBlocked(true);
     };
 
     setToggles = (syncChecked: boolean, allAllowedChecked: boolean, allowedDomainsChecked: boolean, allowedDomains: string) => {
@@ -452,7 +462,7 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
             return null;
         }
 
-        const {totalGroups, saving, saveNeeded, serverError, groups, allAllowedChecked, allowedDomainsChecked, allowedDomains, syncChecked, showRemoveConfirmation, usersToRemoveCount, isLocalArchived, showArchiveConfirmModal} = this.state;
+        const {totalGroups, saving, saveNeeded, serverError, groups, allAllowedChecked, allowedDomainsChecked, allowedDomains, organizationMemberLimit, syncChecked, showRemoveConfirmation, usersToRemoveCount, isLocalArchived, showArchiveConfirmModal} = this.state;
         const missingGroup = (og: {id: string}) => !groups.find((g) => g.id === og.id);
         const removedGroups = this.props.groups.filter(missingGroup);
         const nonArchivedContent = (
@@ -473,6 +483,12 @@ export default class TeamDetails extends React.PureComponent<Props, State> {
                     onToggle={this.setToggles}
                     isDisabled={this.props.isDisabled}
                     isLicensedForLDAPGroups={isLicensedForLDAPGroups}
+                />
+
+                <TeamOrganizationLimit
+                    organizationMemberLimit={organizationMemberLimit}
+                    onChange={this.setOrganizationMemberLimit}
+                    isDisabled={this.props.isDisabled}
                 />
 
                 {isLicensedForLDAPGroups &&
