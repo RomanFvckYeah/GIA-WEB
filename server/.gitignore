@@ -124,3 +124,8 @@ report.xml
 go.*.orig
 config.override.mk
 docker-compose.override.yaml
+
+# GIA production Docker setup (server/docker-compose.gia.yml) — real secrets and volume data,
+# never committed. .env.gia.example (the template) is fine and stays tracked.
+.env.gia
+/volumes

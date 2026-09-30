@@ -1,0 +1,72 @@
+# Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+# See LICENSE.txt for license information.
+#
+# Compose de producción para GIA-WEB en un solo droplet — no confundir con docker-compose.makefile.yml
+# (ese es solo para desarrollo local). Nginx/certbot se dejan fuera a propósito: viven directo en el
+# host del droplet, es el camino más simple para manejar TLS con Let's Encrypt.
+#
+# Uso:
+#   cd server
+#   make package-linux-amd64
+#   cp .env.gia.example .env.gia   # y editar con los valores reales
+#   docker compose -f docker-compose.gia.yml --env-file .env.gia up -d --build
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: gia-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mmuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-mattermost}
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-mmuser}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - gia-web
+
+  app:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.gia
+    container_name: gia-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Solo expuesto en localhost — nginx en el host es quien atiende al público en 80/443.
+      - "127.0.0.1:8065:8065"
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER:-mmuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mattermost}?sslmode=disable&connect_timeout=10"
+      MM_SERVICESETTINGS_SITEURL: ${SITE_URL}
+      MM_COVIASETTINGS_ENABLE: "true"
+      MM_COVIASETTINGS_BASEURL: ${COVIA_BASE_URL}
+      MM_COVIASETTINGS_APIKEY: ${COVIA_API_KEY}
+      MM_COVIASETTINGS_ENABLEGROUPDELETESYNC: "true"
+      MM_COVIASETTINGS_ENABLEGROUPRENAMESYNC: "true"
+      MM_EMAILSETTINGS_SMTPSERVER: ${SMTP_SERVER}
+      MM_EMAILSETTINGS_SMTPPORT: ${SMTP_PORT}
+      MM_EMAILSETTINGS_SMTPUSERNAME: ${SMTP_USERNAME}
+      MM_EMAILSETTINGS_SMTPPASSWORD: ${SMTP_PASSWORD}
+    volumes:
+      - ./volumes/config:/mattermost/config
+      - ./volumes/data:/mattermost/data
+      - ./volumes/logs:/mattermost/logs
+      - mm-plugins:/mattermost/plugins
+      - mm-client-plugins:/mattermost/client/plugins
+    networks:
+      - gia-web
+
+networks:
+  gia-web:
+
+volumes:
+  mm-plugins:
+  mm-client-plugins:
