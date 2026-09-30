@@ -95,8 +95,10 @@ func TestOperationalTrackingGroups(t *testing.T) {
 		appErr = th.App.AddUserToTeamOrganization(th.Context, team.Id, orgMember.Id, th.SystemAdminUser.Id)
 		require.Nil(t, appErr)
 
-		require.Nil(t, th.App.AddOperationalTrackingGroupMember(th.Context, group1.Id, orgMember.Id, th.SystemAdminUser.Id))
-		require.Nil(t, th.App.AddOperationalTrackingGroupMember(th.Context, group2.Id, orgMember.Id, th.SystemAdminUser.Id))
+		appErr = th.App.AddOperationalTrackingGroupMember(th.Context, group1.Id, orgMember.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
+		appErr = th.App.AddOperationalTrackingGroupMember(th.Context, group2.Id, orgMember.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
 
 		members1, appErr := th.App.GetOperationalTrackingGroupMembers(th.Context, group1.Id)
 		require.Nil(t, appErr)
@@ -113,7 +115,8 @@ func TestOperationalTrackingGroups(t *testing.T) {
 
 		orgMember := th.CreateUser(t)
 		require.Nil(t, th.App.AddUserToTeamOrganization(th.Context, team.Id, orgMember.Id, th.SystemAdminUser.Id))
-		require.Nil(t, th.App.AddOperationalTrackingGroupMember(th.Context, group.Id, orgMember.Id, th.SystemAdminUser.Id))
+		appErr = th.App.AddOperationalTrackingGroupMember(th.Context, group.Id, orgMember.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
 
 		appErr = th.App.RemoveOperationalTrackingGroupMember(th.Context, group.Id, orgMember.Id)
 		require.Nil(t, appErr)
@@ -130,7 +133,8 @@ func TestOperationalTrackingGroups(t *testing.T) {
 
 		orgMember := th.CreateUser(t)
 		require.Nil(t, th.App.AddUserToTeamOrganization(th.Context, team.Id, orgMember.Id, th.SystemAdminUser.Id))
-		require.Nil(t, th.App.AddOperationalTrackingGroupMember(th.Context, group.Id, orgMember.Id, th.SystemAdminUser.Id))
+		appErr = th.App.AddOperationalTrackingGroupMember(th.Context, group.Id, orgMember.Id, th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
 
 		appErr = th.App.DeleteOperationalTrackingGroup(th.Context, group.Id)
 		require.Nil(t, appErr)
@@ -141,5 +145,32 @@ func TestOperationalTrackingGroups(t *testing.T) {
 		groups, appErr := th.App.GetOperationalTrackingGroupsForTeam(th.Context, team.Id)
 		require.Nil(t, appErr)
 		require.Empty(t, groups)
+	})
+
+	t.Run("renaming a group", func(t *testing.T) {
+		team := th.CreateTeam(t)
+		group, appErr := th.App.CreateOperationalTrackingGroup(th.Context, team.Id, "Nombre Original", th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
+
+		updated, appErr := th.App.UpdateOperationalTrackingGroupName(th.Context, group.Id, "  Nombre Actualizado  ")
+		require.Nil(t, appErr)
+		require.Equal(t, "Nombre Actualizado", updated.Name)
+
+		fetched, appErr := th.App.GetOperationalTrackingGroup(th.Context, group.Id)
+		require.Nil(t, appErr)
+		require.Equal(t, "Nombre Actualizado", fetched.Name)
+	})
+
+	t.Run("renaming a group to an empty name is rejected", func(t *testing.T) {
+		team := th.CreateTeam(t)
+		group, appErr := th.App.CreateOperationalTrackingGroup(th.Context, team.Id, "Nombre Original", th.SystemAdminUser.Id)
+		require.Nil(t, appErr)
+
+		_, appErr = th.App.UpdateOperationalTrackingGroupName(th.Context, group.Id, "   ")
+		require.NotNil(t, appErr)
+
+		fetched, appErr := th.App.GetOperationalTrackingGroup(th.Context, group.Id)
+		require.Nil(t, appErr)
+		require.Equal(t, "Nombre Original", fetched.Name)
 	})
 }

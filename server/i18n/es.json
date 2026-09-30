@@ -6992,6 +6992,10 @@
     "translation": "Los esquemas de permisos personalizados no son compatibles con la licencia actual"
   },
   {
+    "id": "api.user.update_username.not_enable.app_error",
+    "translation": "No puedes cambiar tu nombre de usuario porque esta funcionalidad no está habilitada. Por favor contacta al Administrador de Sistema."
+  },
+  {
     "id": "api.user.update_user_auth.invalid_request",
     "translation": "A la solicitud le falta el parámetro AuthData o AuthService."
   },

@@ -33,8 +33,8 @@ func (s *SqlOperationalTrackingGroupStore) Save(rctx request.CTX, group *model.O
 
 	query := s.getQueryBuilder().
 		Insert("OperationalTrackingGroups").
-		Columns("Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt").
-		Values(group.Id, group.TeamId, group.Name, group.CreateAt, group.CreateBy, group.CoviaSyncStatus, group.CoviaSyncedAt)
+		Columns("Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt", "CoviaGroupId").
+		Values(group.Id, group.TeamId, group.Name, group.CreateAt, group.CreateBy, group.CoviaSyncStatus, group.CoviaSyncedAt, group.CoviaGroupId)
 
 	if _, err := s.GetMaster().ExecBuilder(query); err != nil {
 		return nil, errors.Wrapf(err, "failed to save OperationalTrackingGroup id=%s", group.Id)
@@ -45,12 +45,16 @@ func (s *SqlOperationalTrackingGroupStore) Save(rctx request.CTX, group *model.O
 
 func (s *SqlOperationalTrackingGroupStore) Get(groupID string) (*model.OperationalTrackingGroup, error) {
 	query := s.getQueryBuilder().
-		Select("Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt").
+		Select("Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt", "CoviaGroupId").
 		From("OperationalTrackingGroups").
 		Where(sq.Eq{"Id": groupID})
 
+	// GetMaster(), not GetReplica(): admin actions on this group (add/remove member, delete)
+	// immediately re-read this row to report back the current state, and this table's read
+	// volume is low (admin-only) enough that read-after-write correctness matters more than
+	// offloading to a replica — a replica lag window here shows stale data right after a change.
 	var group model.OperationalTrackingGroup
-	if err := s.GetReplica().GetBuilder(&group, query); err != nil {
+	if err := s.GetMaster().GetBuilder(&group, query); err != nil {
 		return nil, errors.Wrapf(err, "failed to get OperationalTrackingGroup id=%s", groupID)
 	}
 
@@ -60,15 +64,17 @@ func (s *SqlOperationalTrackingGroupStore) Get(groupID string) (*model.Operation
 func (s *SqlOperationalTrackingGroupStore) GetForTeam(teamID string) ([]*model.OperationalTrackingGroup, error) {
 	query := s.getQueryBuilder().
 		Select(
-			"Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt",
+			"Id", "TeamId", "Name", "CreateAt", "CreateBy", "CoviaSyncStatus", "CoviaSyncedAt", "CoviaGroupId",
 			"(SELECT COUNT(*) FROM OperationalTrackingGroupMembers m WHERE m.GroupId = OperationalTrackingGroups.Id) AS MemberCount",
 		).
 		From("OperationalTrackingGroups").
 		Where(sq.Eq{"TeamId": teamID}).
 		OrderBy("Name ASC")
 
+	// GetMaster(): see the comment on Get() above — this list is re-fetched right after
+	// create/delete, and needs to reflect that write immediately, not once a replica catches up.
 	var groups []*model.OperationalTrackingGroup
-	if err := s.GetReplica().SelectBuilder(&groups, query); err != nil && err != sql.ErrNoRows {
+	if err := s.GetMaster().SelectBuilder(&groups, query); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "failed to get OperationalTrackingGroups for teamId=%s", teamID)
 	}
 
@@ -121,15 +127,14 @@ func (s *SqlOperationalTrackingGroupStore) RemoveMember(groupID, userID string) 
 	return nil
 }
 
-func (s *SqlOperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID, status string) error {
+func (s *SqlOperationalTrackingGroupStore) UpdateName(groupID, name string) error {
 	query := s.getQueryBuilder().
 		Update("OperationalTrackingGroups").
-		Set("CoviaSyncStatus", status).
-		Set("CoviaSyncedAt", model.GetMillis()).
+		Set("Name", name).
 		Where(sq.Eq{"Id": groupID})
 
 	if _, err := s.GetMaster().ExecBuilder(query); err != nil {
-		return errors.Wrapf(err, "failed to update Covia sync status for OperationalTrackingGroup id=%s", groupID)
+		return errors.Wrapf(err, "failed to update name for OperationalTrackingGroup id=%s", groupID)
 	}
 
 	return nil
@@ -142,8 +147,10 @@ func (s *SqlOperationalTrackingGroupStore) GetMembers(groupID string) ([]*model.
 		Where(sq.Eq{"GroupId": groupID}).
 		OrderBy("CreateAt ASC")
 
+	// GetMaster(): see the comment on Get() above — this list is re-fetched right after
+	// add/remove, and needs to reflect that write immediately, not once a replica catches up.
 	var members []*model.OperationalTrackingGroupMember
-	if err := s.GetReplica().SelectBuilder(&members, query); err != nil && err != sql.ErrNoRows {
+	if err := s.GetMaster().SelectBuilder(&members, query); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "failed to get OperationalTrackingGroupMembers for groupId=%s", groupID)
 	}
 

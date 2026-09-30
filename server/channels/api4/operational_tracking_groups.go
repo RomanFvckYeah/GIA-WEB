@@ -14,6 +14,7 @@ import (
 func (api *API) InitOperationalTrackingGroups() {
 	api.BaseRoutes.Team.Handle("/operational_tracking_groups", api.APISessionRequired(createOperationalTrackingGroup)).Methods(http.MethodPost)
 	api.BaseRoutes.Team.Handle("/operational_tracking_groups", api.APISessionRequired(getOperationalTrackingGroupsForTeam)).Methods(http.MethodGet)
+	api.BaseRoutes.APIRoot.Handle("/operational_tracking_groups/{group_id:[A-Za-z0-9]+}", api.APISessionRequired(updateOperationalTrackingGroupName)).Methods(http.MethodPatch)
 	api.BaseRoutes.APIRoot.Handle("/operational_tracking_groups/{group_id:[A-Za-z0-9]+}", api.APISessionRequired(deleteOperationalTrackingGroup)).Methods(http.MethodDelete)
 	api.BaseRoutes.APIRoot.Handle("/operational_tracking_groups/{group_id:[A-Za-z0-9]+}/members", api.APISessionRequired(getOperationalTrackingGroupMembers)).Methods(http.MethodGet)
 	api.BaseRoutes.APIRoot.Handle("/operational_tracking_groups/{group_id:[A-Za-z0-9]+}/members/{user_id:[A-Za-z0-9]+}", api.APISessionRequired(addOperationalTrackingGroupMember)).Methods(http.MethodPost)
@@ -83,6 +84,42 @@ func getOperationalTrackingGroupsForTeam(c *Context, w http.ResponseWriter, r *h
 	}
 
 	if err := json.NewEncoder(w).Encode(groups); err != nil {
+		c.Logger.Warn("Error while writing response", mlog.Err(err))
+	}
+}
+
+func updateOperationalTrackingGroupName(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.RequireGroupId()
+	if c.Err != nil {
+		return
+	}
+
+	group, appErr := c.App.GetOperationalTrackingGroup(c.AppContext, c.Params.GroupId)
+	if appErr != nil {
+		c.Err = appErr
+		return
+	}
+
+	if !canManageOperationalTrackingGroupsForTeam(c, group.TeamId) {
+		c.SetPermissionError(model.PermissionManageTeam)
+		return
+	}
+
+	var body struct {
+		Name string `json:"name"`
+	}
+	if jsonErr := json.NewDecoder(r.Body).Decode(&body); jsonErr != nil {
+		c.SetInvalidParamWithErr("name", jsonErr)
+		return
+	}
+
+	updated, appErr := c.App.UpdateOperationalTrackingGroupName(c.AppContext, group.Id, body.Name)
+	if appErr != nil {
+		c.Err = appErr
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(updated); err != nil {
 		c.Logger.Warn("Error while writing response", mlog.Err(err))
 	}
 }
@@ -162,10 +199,10 @@ func addOperationalTrackingGroupMember(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Echoes back the exact payload that was (or will be) sent to Covia for this member, purely
-	// so it's visible in the browser console for verification while Covia's real endpoint
-	// doesn't exist yet — see App.PreviewCoviaGroupMemberPayload. A failure here doesn't affect
-	// the add itself (already committed above); the preview is just omitted.
+	// Echoes back the exact payload that was sent to Covia for this member, purely so it's
+	// visible in the browser console for verification. A failure here doesn't affect the add
+	// itself (already committed above, since it required Covia's confirmation); the preview is
+	// just omitted.
 	preview, previewErr := c.App.PreviewCoviaGroupMemberPayload(c.AppContext, c.Params.UserId)
 	if previewErr != nil {
 		c.Logger.Warn("Failed to build Covia sync preview", mlog.Err(previewErr))

@@ -19,6 +19,7 @@ func GenerateClientConfig(c *model.Config, telemetryID string, license *model.Li
 	props["EnableCustomUserStatuses"] = strconv.FormatBool(*c.TeamSettings.EnableCustomUserStatuses)
 	props["EnableLastActiveTime"] = strconv.FormatBool(*c.TeamSettings.EnableLastActiveTime)
 	props["EnableUserDeactivation"] = strconv.FormatBool(*c.TeamSettings.EnableUserDeactivation)
+	props["EnableUsernameChange"] = strconv.FormatBool(*c.TeamSettings.EnableUsernameChange)
 	props["RestrictDirectMessage"] = *c.TeamSettings.RestrictDirectMessage
 	props["TeammateNameDisplay"] = *c.TeamSettings.TeammateNameDisplay
 	props["LockTeammateNameDisplay"] = strconv.FormatBool(*c.TeamSettings.LockTeammateNameDisplay)

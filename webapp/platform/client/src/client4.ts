@@ -1578,6 +1578,13 @@ export default class Client4 {
         );
     };
 
+    updateOperationalTrackingGroupName = (groupId: string, name: string) => {
+        return this.doFetch<OperationalTrackingGroup>(
+            `${this.getBaseRoute()}/operational_tracking_groups/${groupId}`,
+            {method: 'PATCH', body: JSON.stringify({name})},
+        );
+    };
+
     deleteOperationalTrackingGroup = (groupId: string) => {
         return this.doFetch<StatusOK>(
             `${this.getBaseRoute()}/operational_tracking_groups/${groupId}`,

@@ -6512,10 +6512,10 @@ func (s *TimerLayerOperationalTrackingGroupStore) Save(rctx request.CTX, group *
 	return result, err
 }
 
-func (s *TimerLayerOperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID string, status string) error {
+func (s *TimerLayerOperationalTrackingGroupStore) UpdateName(groupID string, name string) error {
 	start := time.Now()
 
-	err := s.OperationalTrackingGroupStore.UpdateCoviaSyncStatus(groupID, status)
+	err := s.OperationalTrackingGroupStore.UpdateName(groupID, name)
 
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 	if s.Root.Metrics != nil {
@@ -6523,7 +6523,7 @@ func (s *TimerLayerOperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID 
 		if err == nil {
 			success = "true"
 		}
-		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.UpdateCoviaSyncStatus", success, elapsed)
+		s.Root.Metrics.ObserveStoreMethodDuration("OperationalTrackingGroupStore.UpdateName", success, elapsed)
 	}
 	return err
 }

@@ -189,17 +189,17 @@ func (_m *OperationalTrackingGroupStore) Save(rctx request.CTX, group *model.Ope
 	return r0, r1
 }
 
-// UpdateCoviaSyncStatus provides a mock function with given fields: groupID, status
-func (_m *OperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID string, status string) error {
-	ret := _m.Called(groupID, status)
+// UpdateName provides a mock function with given fields: groupID, name
+func (_m *OperationalTrackingGroupStore) UpdateName(groupID string, name string) error {
+	ret := _m.Called(groupID, name)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateCoviaSyncStatus")
+		panic("no return value specified for UpdateName")
 	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(groupID, status)
+		r0 = rf(groupID, name)
 	} else {
 		r0 = ret.Error(0)
 	}

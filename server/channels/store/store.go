@@ -1252,7 +1252,7 @@ type OperationalTrackingGroupStore interface {
 	AddMember(rctx request.CTX, groupID, userID, createdBy string) error
 	RemoveMember(groupID, userID string) error
 	GetMembers(groupID string) ([]*model.OperationalTrackingGroupMember, error)
-	UpdateCoviaSyncStatus(groupID, status string) error
+	UpdateName(groupID, name string) error
 }
 
 type DirectMessageExceptionStore interface {

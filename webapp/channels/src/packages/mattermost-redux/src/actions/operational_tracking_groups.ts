@@ -23,6 +23,16 @@ export function getOperationalTrackingGroupsForTeam(teamId: string) {
     });
 }
 
+export function updateOperationalTrackingGroupName(groupId: string, name: string) {
+    return bindClientFunc({
+        clientFunc: Client4.updateOperationalTrackingGroupName,
+        params: [
+            groupId,
+            name,
+        ],
+    });
+}
+
 export function deleteOperationalTrackingGroup(groupId: string) {
     return bindClientFunc({
         clientFunc: Client4.deleteOperationalTrackingGroup,

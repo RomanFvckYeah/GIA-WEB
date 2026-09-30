@@ -1442,6 +1442,15 @@ func updateUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If a username change is attempted by the currently logged in (non-admin) user, and
+	// TeamSettings.EnableUsernameChange is off, reject it. Admins editing themselves or
+	// anyone else are never blocked here.
+	if user.Username != "" && user.Username != ouser.Username && c.AppContext.Session().UserId == c.Params.UserId &&
+		!*c.App.Config().TeamSettings.EnableUsernameChange && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		c.Err = model.NewAppError("updateUser", "api.user.update_username.not_enable.app_error", nil, "", http.StatusUnauthorized)
+		return
+	}
+
 	ruser, err := c.App.UpdateUserAsUser(c.AppContext, &user, c.IsSystemAdmin())
 	if err != nil {
 		c.Err = err
@@ -1523,6 +1532,15 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 			c.Err = err
 			return
 		}
+	}
+
+	// If a username change is attempted by the currently logged in (non-admin) user, and
+	// TeamSettings.EnableUsernameChange is off, reject it. Admins editing themselves or
+	// anyone else are never blocked here.
+	if patch.Username != nil && *patch.Username != ouser.Username && c.AppContext.Session().UserId == c.Params.UserId &&
+		!*c.App.Config().TeamSettings.EnableUsernameChange && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		c.Err = model.NewAppError("patchUser", "api.user.update_username.not_enable.app_error", nil, "", http.StatusUnauthorized)
+		return
 	}
 
 	ruser, err := c.App.PatchUser(c.AppContext, c.Params.UserId, &patch, c.IsSystemAdmin())

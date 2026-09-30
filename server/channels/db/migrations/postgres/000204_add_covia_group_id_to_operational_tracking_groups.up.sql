@@ -1,0 +1,1 @@
+ALTER TABLE OperationalTrackingGroups ADD COLUMN IF NOT EXISTS CoviaGroupId VARCHAR(64) NOT NULL DEFAULT '';

@@ -96,8 +96,7 @@ import GroupDetails from './group_settings/group_details';
 import GroupSettings from './group_settings/group_settings';
 import IPFiltering from './ip_filtering';
 import LDAPWizard from './ldap_wizard';
-import LicenseSettings from './license_settings';
-import {searchableStrings as licenseSettingsSearchableStrings} from './license_settings/license_settings';
+import GiaEditionPanel, {searchableStrings as licenseSettingsSearchableStrings} from './license_settings/gia_edition_panel';
 import LicensedSectionContainer from './licensed_section_container';
 import AutoTranslation, {searchableStrings as autoTranslationSearchableStrings} from './localization/auto_translation';
 import Localization, {searchableStrings as localizationSearchableStrings} from './localization/localization';
@@ -265,7 +264,7 @@ const AdminDefinition: AdminDefinitionType = {
                 isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.ABOUT.EDITION_AND_LICENSE)),
                 schema: {
                     id: 'LicenseSettings',
-                    component: LicenseSettings,
+                    component: GiaEditionPanel,
                 },
             },
         },
@@ -458,6 +457,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.groups', defaultMessage: 'Groups'}),
                 isHidden: it.any(
                     it.licensedForFeature('LDAPGroups'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'Groups',
@@ -586,6 +586,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.systemRoles', defaultMessage: 'Delegated Granular Administration'}),
                 isHidden: it.any(
                     it.licensedForFeature('LDAPGroups'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'SystemRoles',
@@ -693,6 +694,7 @@ const AdminDefinition: AdminDefinitionType = {
                 isHidden: it.any(
                     it.minLicenseTier(LicenseSkus.EnterpriseAdvanced),
                     it.configIsFalse('FeatureFlags', 'AttributeBasedAccessControl'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'AttributeBasedAccessControl',
@@ -2382,6 +2384,7 @@ const AdminDefinition: AdminDefinitionType = {
                 isHidden: it.any(
                     it.not(it.userHasReadPermissionOnResource(RESOURCE_KEYS.ENVIRONMENT.MOBILE_SECURITY)),
                     it.minLicenseTier(LicenseSkus.Enterprise),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'MobileSecurityFeatureDiscoverySettings',
@@ -2827,6 +2830,16 @@ const AdminDefinition: AdminDefinitionType = {
                         },
                         {
                             type: 'bool',
+                            key: 'TeamSettings.EnableUsernameChange',
+                            label: defineMessage({id: 'admin.team.enableUsernameChangeTitle', defaultMessage: 'Allow users to change their username:'}),
+                            help_text: defineMessage({id: 'admin.team.enableUsernameChangeDescription', defaultMessage: 'When false, users cannot change their own username under <strong>Settings > General > Username</strong>. System admins can still change it for themselves or for any other user.'}), // eslint-disable-line formatjs/enforce-placeholders -- placeholders provided
+                            help_text_values: {
+                                strong: (msg: string) => <strong>{msg}</strong>,
+                            },
+                            isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.USERS_AND_TEAMS)),
+                        },
+                        {
+                            type: 'bool',
                             key: 'PrivacySettings.ShowEmailAddress',
                             label: defineMessage({id: 'admin.privacy.showEmailTitle', defaultMessage: 'Show Email Address:'}),
                             help_text: defineMessage({id: 'admin.privacy.showEmailDescription', defaultMessage: 'When false, hides the email address of members from everyone except System Administrators and the System Roles with read/write access to Compliance, Billing, or User Management.'}),
@@ -3133,6 +3146,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.announcement', defaultMessage: 'System-wide Notifications'}),
                 isHidden: it.any(
                     it.licensedForFeature('Announcement'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'AnnouncementSettings',
@@ -3506,7 +3520,10 @@ const AdminDefinition: AdminDefinitionType = {
                                     ),
                                 },
                             ],
-                            isHidden: it.configIsFalse('FeatureFlags', 'BurnOnRead'),
+                            isHidden: it.any(
+                                it.configIsFalse('FeatureFlags', 'BurnOnRead'),
+                                it.not(it.licensed),
+                            ),
                         },
                         {
                             key: 'PostSettings.Previews',
@@ -4079,6 +4096,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.ldap', defaultMessage: 'AD/LDAP'}),
                 isHidden: it.any(
                     it.licensedForFeature('LDAP'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'LdapSettings',
@@ -4556,6 +4574,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.saml', defaultMessage: 'SAML 2.0'}),
                 isHidden: it.any(
                     it.licensedForFeature('SAML'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'SamlSettings',
@@ -5276,6 +5295,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.openid', defaultMessage: 'OpenID Connect'}),
                 isHidden: it.any(
                     it.any(it.licensedForFeature('OpenId'), it.cloudLicensed),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'OpenIdSettings',
@@ -5297,6 +5317,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.gitlab', defaultMessage: 'GitLab'}),
                 isHidden: it.any(
                     it.licensedForFeature('OpenId'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'GitLabSettings',
@@ -5406,6 +5427,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.guest_access', defaultMessage: 'Guest Access'}),
                 isHidden: it.any(
                     it.licensedForFeature('GuestAccounts'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'GuestAccountsSettings',
@@ -5872,6 +5894,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.dataRetentionPolicy', defaultMessage: 'Data Retention Policy'}),
                 isHidden: it.any(
                     it.licensedForFeature('DataRetention'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'DataRetentionSettings',
@@ -5908,6 +5931,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.complianceExport', defaultMessage: 'Compliance Export'}),
                 isHidden: it.any(
                     it.licensedForFeature('MessageExport'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'MessageExportSettings',
@@ -6107,6 +6131,7 @@ const AdminDefinition: AdminDefinitionType = {
                 title: defineMessage({id: 'admin.sidebar.customTermsOfService', defaultMessage: 'Custom Terms of Service'}),
                 isHidden: it.any(
                     it.licensedForFeature('CustomTermsOfService'),
+                    it.not(it.licensed),
                 ),
                 schema: {
                     id: 'TermsOfServiceSettings',

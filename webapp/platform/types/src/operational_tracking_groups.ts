@@ -14,8 +14,7 @@ export type OperationalTrackingGroup = {
     covia_synced_at: number;
 
     // Only present on the create-group response — the server echoes back the exact payload it
-    // sent (or will send) to Covia for this group, purely so it's visible for verification while
-    // Covia's real endpoint doesn't exist yet.
+    // sent to Covia for this group, purely so it's visible for verification.
     covia_sync_preview?: unknown;
 };
 

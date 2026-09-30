@@ -36,6 +36,10 @@ type coviaGroupPayload struct {
 	Name      string `json:"name"`
 }
 
+type coviaRenameGroupPayload struct {
+	Name string `json:"name"`
+}
+
 type coviaGroupMemberPayload struct {
 	UserId     string                     `json:"user_id"`
 	PhotoURL   string                     `json:"photo_url"`
@@ -44,17 +48,34 @@ type coviaGroupMemberPayload struct {
 	Attributes map[string]json.RawMessage `json:"attributes"`
 }
 
-// coviaDo issues one request to Covia and returns its status code. The response body is drained
-// and discarded — Covia's real response shape isn't known yet, and none of the callers need it,
-// only whether the request succeeded.
-func (a *App) coviaDo(method, path string, body io.Reader) (int, error) {
+// coviaResponse is the shape every real Covia endpoint responds with (confirmed against their
+// docs): HTTP 200 even on failure, with success/failure signaled by the "error" field in the
+// body, not the status code.
+type coviaResponse struct {
+	Error   bool            `json:"error"`
+	Message string          `json:"message"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
+// coviaCreateGroupResponseData is coviaResponse.Data for the create-group endpoint specifically.
+// ExternalId always echoes back the same id we sent as coviaGroupPayload.Id — Covia's own
+// internal id lives in Id, which we keep around purely for reference (never used in any
+// subsequent URL; those all use OUR id, per Covia's ":external_id" path param naming).
+type coviaCreateGroupResponseData struct {
+	Id         string `json:"id"`
+	ExternalId string `json:"external_id"`
+}
+
+// coviaDo issues one request to Covia and returns its status code and raw response body — the
+// body is needed now to check the "error" field (see coviaResponse), not just the HTTP status.
+func (a *App) coviaDo(method, path string, body io.Reader) (int, []byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), coviaRequestTimeout)
 	defer cancel()
 
 	baseURL := strings.TrimRight(*a.Config().CoviaSettings.BaseURL, "/")
 	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, body)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -65,110 +86,187 @@ func (a *App) coviaDo(method, path string, body io.Reader) (int, error) {
 
 	resp, err := a.Srv().coviaClient.Do(req)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck // best-effort drain so the connection can be reused
 
-	return resp.StatusCode, nil
-}
-
-func coviaRecover(rctx request.CTX, op string) {
-	if r := recover(); r != nil {
-		rctx.Logger().Error("Recovered from panic while syncing to Covia", mlog.String("op", op), mlog.Any("panic", r))
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return resp.StatusCode, nil, err
 	}
+
+	return resp.StatusCode, respBody, nil
 }
 
-// SyncOperationalTrackingGroupToCovia notifies Covia that a group was created. Fire-and-forget:
-// never blocks or fails the caller, and the group already exists locally regardless of whether
-// Covia acknowledges it — CoviaSyncStatus only ever reflects Covia's response, it never gates
-// local existence/usability.
-func (a *App) SyncOperationalTrackingGroupToCovia(rctx request.CTX, group *model.OperationalTrackingGroup) {
+// coviaSucceeded reports whether a Covia call actually succeeded: the HTTP status must be 2xx
+// AND the body must parse as a coviaResponse with error=false. A body that fails to parse is
+// treated as a failure too — if we can't confirm success, we don't assume it.
+func coviaSucceeded(status int, body []byte) (bool, *coviaResponse) {
+	if status < 200 || status >= 300 {
+		return false, nil
+	}
+
+	var parsed coviaResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return false, nil
+	}
+
+	return !parsed.Error, &parsed
+}
+
+// SyncOperationalTrackingGroupToCovia notifies Covia that a group is about to be created and waits
+// for the outcome — this is called BEFORE the group is saved locally (see
+// App.CreateOperationalTrackingGroup), so it never touches the database itself: it's purely the
+// HTTP call, and it's up to the caller to decide whether/what to persist based on the result.
+// Synchronous now that Covia is live and confirmed fast (~0.3s): this is only ever called from
+// admin actions that already show their own "saving" state, never a chat hot path.
+func (a *App) SyncOperationalTrackingGroupToCovia(rctx request.CTX, groupID, createdBy, name string) (succeeded bool, coviaGroupID, coviaMessage string) {
 	if !*a.Config().CoviaSettings.Enable {
-		return
+		return true, "", ""
 	}
 
-	groupID, createdBy, name := group.Id, group.CreateBy, group.Name
+	jsonBytes, err := json.Marshal(coviaGroupPayload{Id: groupID, CreatedBy: createdBy, Name: name})
+	if err != nil {
+		rctx.Logger().Error("Failed to encode operational tracking group for Covia", mlog.String("group_id", groupID), mlog.Err(err))
+		return false, "", err.Error()
+	}
 
-	a.Srv().Go(func() {
-		defer coviaRecover(rctx, "SyncOperationalTrackingGroupToCovia")
+	status, respBody, reqErr := a.coviaDo(http.MethodPost, "/groups", bytes.NewReader(jsonBytes))
+	if reqErr != nil {
+		rctx.Logger().Error("Failed to sync operational tracking group to Covia", mlog.String("group_id", groupID), mlog.Err(reqErr))
+		return false, "", reqErr.Error()
+	}
 
-		jsonBytes, err := json.Marshal(coviaGroupPayload{Id: groupID, CreatedBy: createdBy, Name: name})
-		if err != nil {
-			rctx.Logger().Error("Failed to encode operational tracking group for Covia", mlog.String("group_id", groupID), mlog.Err(err))
-			return
+	ok, parsed := coviaSucceeded(status, respBody)
+	if !ok {
+		if parsed != nil {
+			coviaMessage = parsed.Message
 		}
+		rctx.Logger().Error("Covia rejected operational tracking group sync", mlog.String("group_id", groupID), mlog.Int("status", status), mlog.String("covia_message", coviaMessage))
+		return false, "", coviaMessage
+	}
 
-		status, reqErr := a.coviaDo(http.MethodPost, "/groups", bytes.NewReader(jsonBytes))
+	var data coviaCreateGroupResponseData
+	if err := json.Unmarshal(parsed.Data, &data); err == nil {
+		coviaGroupID = data.Id
+	}
+	return true, coviaGroupID, ""
+}
 
-		syncStatus := model.OperationalTrackingGroupCoviaSyncStatusFailed
-		if reqErr != nil {
-			rctx.Logger().Error("Failed to sync operational tracking group to Covia", mlog.String("group_id", groupID), mlog.Err(reqErr))
-		} else if status >= 200 && status < 300 {
-			syncStatus = model.OperationalTrackingGroupCoviaSyncStatusSynced
-		} else {
-			rctx.Logger().Error("Covia rejected operational tracking group sync", mlog.String("group_id", groupID), mlog.Int("status", status))
+// SyncOperationalTrackingGroupDeletedToCovia notifies Covia that a group (and, on Covia's side,
+// all of its members) should be deleted. Gated separately by EnableGroupDeleteSync, not just
+// Enable — Covia doesn't have this endpoint yet, so while the extra switch is off (the default)
+// this always succeeds without attempting any call, and deleting a group locally behaves exactly
+// as it did before this endpoint was planned. Once Covia confirms it exists and the switch is
+// flipped on, a real failure here blocks the local delete too.
+func (a *App) SyncOperationalTrackingGroupDeletedToCovia(rctx request.CTX, groupID string) (succeeded bool, coviaMessage string) {
+	if !*a.Config().CoviaSettings.Enable || !*a.Config().CoviaSettings.EnableGroupDeleteSync {
+		return true, ""
+	}
+
+	status, respBody, err := a.coviaDo(http.MethodDelete, "/groups/"+groupID, nil)
+	if err != nil {
+		rctx.Logger().Error("Failed to sync deleted operational tracking group to Covia", mlog.String("group_id", groupID), mlog.Err(err))
+		return false, err.Error()
+	}
+
+	ok, parsed := coviaSucceeded(status, respBody)
+	if !ok {
+		if parsed != nil {
+			coviaMessage = parsed.Message
 		}
+		rctx.Logger().Error("Covia rejected operational tracking group deletion sync", mlog.String("group_id", groupID), mlog.Int("status", status), mlog.String("covia_message", coviaMessage))
+	}
+	return ok, coviaMessage
+}
 
-		if updErr := a.Srv().Store().OperationalTrackingGroup().UpdateCoviaSyncStatus(groupID, syncStatus); updErr != nil {
-			rctx.Logger().Error("Failed to update Covia sync status", mlog.String("group_id", groupID), mlog.Err(updErr))
+// SyncOperationalTrackingGroupRenamedToCovia notifies Covia of a group's new name. Gated
+// separately by EnableGroupRenameSync — same reasoning as SyncOperationalTrackingGroupDeletedToCovia.
+func (a *App) SyncOperationalTrackingGroupRenamedToCovia(rctx request.CTX, groupID, name string) (succeeded bool, coviaMessage string) {
+	if !*a.Config().CoviaSettings.Enable || !*a.Config().CoviaSettings.EnableGroupRenameSync {
+		return true, ""
+	}
+
+	jsonBytes, err := json.Marshal(coviaRenameGroupPayload{Name: name})
+	if err != nil {
+		rctx.Logger().Error("Failed to encode operational tracking group rename for Covia", mlog.String("group_id", groupID), mlog.Err(err))
+		return false, err.Error()
+	}
+
+	status, respBody, reqErr := a.coviaDo(http.MethodPatch, "/groups/"+groupID, bytes.NewReader(jsonBytes))
+	if reqErr != nil {
+		rctx.Logger().Error("Failed to sync renamed operational tracking group to Covia", mlog.String("group_id", groupID), mlog.Err(reqErr))
+		return false, reqErr.Error()
+	}
+
+	ok, parsed := coviaSucceeded(status, respBody)
+	if !ok {
+		if parsed != nil {
+			coviaMessage = parsed.Message
 		}
-	})
+		rctx.Logger().Error("Covia rejected operational tracking group rename sync", mlog.String("group_id", groupID), mlog.Int("status", status), mlog.String("covia_message", coviaMessage))
+	}
+	return ok, coviaMessage
 }
 
 // SyncOperationalTrackingGroupMemberAddedToCovia notifies Covia that a single member was added —
 // only that one member is sent, never the group's full member list (each add/remove syncs just
-// its own change).
-func (a *App) SyncOperationalTrackingGroupMemberAddedToCovia(rctx request.CTX, groupID, userID string) {
+// its own change). Synchronous, same reasoning as SyncOperationalTrackingGroupToCovia.
+func (a *App) SyncOperationalTrackingGroupMemberAddedToCovia(rctx request.CTX, groupID, userID string) (succeeded bool, coviaMessage string) {
 	if !*a.Config().CoviaSettings.Enable {
-		return
+		return true, ""
 	}
 
-	a.Srv().Go(func() {
-		defer coviaRecover(rctx, "SyncOperationalTrackingGroupMemberAddedToCovia")
+	payload, appErr := a.buildCoviaGroupMemberPayload(rctx, userID)
+	if appErr != nil {
+		rctx.Logger().Error("Failed to build Covia member payload", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(appErr))
+		return false, appErr.Error()
+	}
 
-		payload, appErr := a.buildCoviaGroupMemberPayload(rctx, userID)
-		if appErr != nil {
-			rctx.Logger().Error("Failed to build Covia member payload", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(appErr))
-			return
-		}
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		rctx.Logger().Error("Failed to encode operational tracking group member for Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(err))
+		return false, err.Error()
+	}
 
-		jsonBytes, err := json.Marshal(payload)
-		if err != nil {
-			rctx.Logger().Error("Failed to encode operational tracking group member for Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(err))
-			return
-		}
+	status, respBody, reqErr := a.coviaDo(http.MethodPost, "/groups/"+groupID+"/members", bytes.NewReader(jsonBytes))
+	if reqErr != nil {
+		rctx.Logger().Error("Failed to sync added operational tracking group member to Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(reqErr))
+		return false, reqErr.Error()
+	}
 
-		status, reqErr := a.coviaDo(http.MethodPost, "/groups/"+groupID+"/members", bytes.NewReader(jsonBytes))
-		if reqErr != nil {
-			rctx.Logger().Error("Failed to sync added operational tracking group member to Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(reqErr))
-			return
+	ok, parsed := coviaSucceeded(status, respBody)
+	if !ok {
+		if parsed != nil {
+			coviaMessage = parsed.Message
 		}
-		if status < 200 || status >= 300 {
-			rctx.Logger().Error("Covia rejected operational tracking group member sync", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Int("status", status))
-		}
-	})
+		rctx.Logger().Error("Covia rejected operational tracking group member sync", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Int("status", status), mlog.String("covia_message", coviaMessage))
+	}
+	return ok, coviaMessage
 }
 
 // SyncOperationalTrackingGroupMemberRemovedToCovia notifies Covia that a single member was
 // removed — no body needed, the group/user ids in the URL are enough to identify what to remove.
-func (a *App) SyncOperationalTrackingGroupMemberRemovedToCovia(rctx request.CTX, groupID, userID string) {
+// Synchronous, same reasoning as SyncOperationalTrackingGroupToCovia.
+func (a *App) SyncOperationalTrackingGroupMemberRemovedToCovia(rctx request.CTX, groupID, userID string) (succeeded bool, coviaMessage string) {
 	if !*a.Config().CoviaSettings.Enable {
-		return
+		return true, ""
 	}
 
-	a.Srv().Go(func() {
-		defer coviaRecover(rctx, "SyncOperationalTrackingGroupMemberRemovedToCovia")
+	status, respBody, err := a.coviaDo(http.MethodDelete, "/groups/"+groupID+"/members/"+userID, nil)
+	if err != nil {
+		rctx.Logger().Error("Failed to sync removed operational tracking group member to Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(err))
+		return false, err.Error()
+	}
 
-		status, err := a.coviaDo(http.MethodDelete, "/groups/"+groupID+"/members/"+userID, nil)
-		if err != nil {
-			rctx.Logger().Error("Failed to sync removed operational tracking group member to Covia", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Err(err))
-			return
+	ok, parsed := coviaSucceeded(status, respBody)
+	if !ok {
+		if parsed != nil {
+			coviaMessage = parsed.Message
 		}
-		if status < 200 || status >= 300 {
-			rctx.Logger().Error("Covia rejected operational tracking group member removal sync", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Int("status", status))
-		}
-	})
+		rctx.Logger().Error("Covia rejected operational tracking group member removal sync", mlog.String("group_id", groupID), mlog.String("user_id", userID), mlog.Int("status", status), mlog.String("covia_message", coviaMessage))
+	}
+	return ok, coviaMessage
 }
 
 // buildCoviaGroupMemberPayload assembles what Covia asked for: user id, a URL to their profile

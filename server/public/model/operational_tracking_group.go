@@ -35,6 +35,12 @@ type OperationalTrackingGroup struct {
 	CoviaSyncStatus string `json:"covia_sync_status"`
 	CoviaSyncedAt   int64  `json:"covia_synced_at"`
 
+	// CoviaGroupId is Covia's OWN internal id for this group (distinct from Id, which is what
+	// Covia calls "external_id" and what every subsequent URL to Covia uses) — kept purely for
+	// reference in case Covia's team ever needs to be told which of their internal group rows
+	// corresponds to ours.
+	CoviaGroupId string `json:"covia_group_id,omitempty"`
+
 	// CoviaSyncPreview is filled in by the create-group API handler only (see
 	// App.PreviewCoviaGroupPayload) — the exact payload that was/will be sent to Covia for this
 	// group, echoed back purely so it's visible for verification. Never a stored column, never

@@ -8111,11 +8111,11 @@ func (s *RetryLayerOperationalTrackingGroupStore) Save(rctx request.CTX, group *
 
 }
 
-func (s *RetryLayerOperationalTrackingGroupStore) UpdateCoviaSyncStatus(groupID string, status string) error {
+func (s *RetryLayerOperationalTrackingGroupStore) UpdateName(groupID string, name string) error {
 
 	tries := 0
 	for {
-		err := s.OperationalTrackingGroupStore.UpdateCoviaSyncStatus(groupID, status)
+		err := s.OperationalTrackingGroupStore.UpdateName(groupID, name)
 		if err == nil {
 			return nil
 		}

@@ -5023,6 +5023,10 @@
     "translation": "Custom Permission Schemes not supported by current license"
   },
   {
+    "id": "api.user.update_username.not_enable.app_error",
+    "translation": "You cannot change your username because this feature is not enabled. Please contact your System Administrator."
+  },
+  {
     "id": "api.user.upload_profile_user.array.app_error",
     "translation": "Empty array under 'image' in request."
   },

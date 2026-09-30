@@ -40,12 +40,16 @@ const TeamOperationalTrackingTab = () => {
 
     useEffect(() => {
         if (!currentTeamId) {
-            return;
+            return undefined;
         }
+        let ignore = false;
         setLoading(true);
         logSent('getOperationalTrackingGroupsForTeam', {teamId: currentTeamId});
         dispatch(getOperationalTrackingGroupsForTeam(currentTeamId)).then((result) => {
             logResult('getOperationalTrackingGroupsForTeam', result);
+            if (ignore) {
+                return;
+            }
             if ('data' in result && result.data) {
                 const groupList = result.data as OperationalTrackingGroup[];
                 setGroups(groupList);
@@ -53,6 +57,9 @@ const TeamOperationalTrackingTab = () => {
             }
             setLoading(false);
         });
+        return () => {
+            ignore = true;
+        };
     }, [dispatch, currentTeamId, refreshKey]);
 
     const filteredGroups = useMemo(() => {
@@ -139,7 +146,19 @@ const TeamOperationalTrackingTab = () => {
                 <ManageOperationalTrackingGroupModal
                     group={selectedGroup}
                     onExited={() => setSelectedGroup(null)}
-                    onChanged={refresh}
+                    onMemberCountChanged={(delta) => {
+                        const groupId = selectedGroup.id;
+                        setGroups((prev) => prev.map((g) => (g.id === groupId ? {...g, member_count: g.member_count + delta} : g)));
+                    }}
+                    onDeleted={() => {
+                        const groupId = selectedGroup.id;
+                        setGroups((prev) => prev.filter((g) => g.id !== groupId));
+                    }}
+                    onRenamed={(newName) => {
+                        const groupId = selectedGroup.id;
+                        setGroups((prev) => prev.map((g) => (g.id === groupId ? {...g, name: newName} : g)));
+                        setSelectedGroup((prev) => (prev && prev.id === groupId ? {...prev, name: newName} : prev));
+                    }}
                 />
             )}
         </>

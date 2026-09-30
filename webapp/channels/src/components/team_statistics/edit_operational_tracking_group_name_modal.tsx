@@ -6,7 +6,9 @@ import {Modal} from 'react-bootstrap';
 import {useIntl} from 'react-intl';
 import {useDispatch} from 'react-redux';
 
-import {createOperationalTrackingGroup} from 'mattermost-redux/actions/operational_tracking_groups';
+import type {OperationalTrackingGroup} from '@mattermost/types/operational_tracking_groups';
+
+import {updateOperationalTrackingGroupName} from 'mattermost-redux/actions/operational_tracking_groups';
 
 import SaveButton from 'components/save_button';
 import Input from 'components/widgets/inputs/input/input';
@@ -18,17 +20,17 @@ import {logSent, logResult} from './operational_tracking_debug';
 const NAME_MAX_LENGTH = 64;
 
 type Props = {
-    teamId: string;
+    group: OperationalTrackingGroup;
     onExited: () => void;
-    onCreated: () => void;
+    onRenamed: (newName: string) => void;
 };
 
-const CreateOperationalTrackingGroupModal = ({teamId, onExited, onCreated}: Props) => {
+const EditOperationalTrackingGroupNameModal = ({group, onExited, onRenamed}: Props) => {
     const {formatMessage} = useIntl();
     const dispatch = useDispatch();
 
     const [show, setShow] = useState(true);
-    const [name, setName] = useState('');
+    const [name, setName] = useState(group.name);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -39,29 +41,29 @@ const CreateOperationalTrackingGroupModal = ({teamId, onExited, onCreated}: Prop
     const handleSave = async () => {
         const trimmedName = name.trim();
         if (!trimmedName) {
-            setError(formatMessage({id: 'team_statistics.operationalTracking.create.invalidName', defaultMessage: 'Name cannot be empty'}));
+            setError(formatMessage({id: 'team_statistics.operationalTracking.editName.invalidName', defaultMessage: 'Name cannot be empty'}));
             return;
         }
         if (trimmedName.length > NAME_MAX_LENGTH) {
-            setError(formatMessage({id: 'team_statistics.operationalTracking.create.nameTooLong', defaultMessage: 'Name cannot be more than {limit} characters'}, {limit: NAME_MAX_LENGTH}));
+            setError(formatMessage({id: 'team_statistics.operationalTracking.editName.nameTooLong', defaultMessage: 'Name cannot be more than {limit} characters'}, {limit: NAME_MAX_LENGTH}));
             return;
         }
 
         setSaving(true);
         setError(null);
 
-        logSent('createOperationalTrackingGroup', {teamId, name: trimmedName});
-        const result = await dispatch(createOperationalTrackingGroup(teamId, trimmedName));
-        logResult('createOperationalTrackingGroup', result);
+        logSent('updateOperationalTrackingGroupName', {groupId: group.id, name: trimmedName});
+        const result = await dispatch(updateOperationalTrackingGroupName(group.id, trimmedName));
+        logResult('updateOperationalTrackingGroupName', result);
 
         setSaving(false);
 
         if ('error' in result && result.error) {
-            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.create.failed', defaultMessage: 'Could not create the group — Covia did not confirm it, so nothing was saved.'}));
+            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.editName.failed', defaultMessage: 'Could not rename the group — Covia did not confirm the change, so nothing was saved.'}));
             return;
         }
 
-        onCreated();
+        onRenamed(trimmedName);
         doHide();
     };
 
@@ -75,7 +77,7 @@ const CreateOperationalTrackingGroupModal = ({teamId, onExited, onCreated}: Prop
         >
             <Modal.Header closeButton={true}>
                 <Modal.Title>
-                    {formatMessage({id: 'team_statistics.operationalTracking.create.title', defaultMessage: 'Create Group'})}
+                    {formatMessage({id: 'team_statistics.operationalTracking.editName.title', defaultMessage: 'Edit Group Name'})}
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
@@ -86,7 +88,7 @@ const CreateOperationalTrackingGroupModal = ({teamId, onExited, onCreated}: Prop
                 )}
                 <Input
                     name='name'
-                    label={formatMessage({id: 'team_statistics.operationalTracking.create.name', defaultMessage: 'Name'})}
+                    label={formatMessage({id: 'team_statistics.operationalTracking.editName.name', defaultMessage: 'Name'})}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={saving}
@@ -105,12 +107,12 @@ const CreateOperationalTrackingGroupModal = ({teamId, onExited, onCreated}: Prop
                     saving={saving}
                     disabled={saving}
                     onClick={handleSave}
-                    defaultMessage={formatMessage({id: 'team_statistics.operationalTracking.create.create', defaultMessage: 'Create'})}
-                    savingMessage={formatMessage({id: 'team_statistics.operationalTracking.create.creating', defaultMessage: 'Creating...'})}
+                    defaultMessage={formatMessage({id: 'team_statistics.operationalTracking.editName.save', defaultMessage: 'Save'})}
+                    savingMessage={formatMessage({id: 'team_statistics.operationalTracking.editName.saving', defaultMessage: 'Saving...'})}
                 />
             </Modal.Footer>
         </Modal>
     );
 };
 
-export default CreateOperationalTrackingGroupModal;
+export default EditOperationalTrackingGroupNameModal;

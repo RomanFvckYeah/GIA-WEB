@@ -114,6 +114,7 @@ export type ClientConfig = {
     EnableUserAccessTokens: string;
     EnableUserCreation: string;
     EnableUserDeactivation: string;
+    EnableUsernameChange: string;
     EnableUserTypingMessages: string;
     EnforceMultifactorAuthentication: string;
     ExperimentalChannelCategorySorting: string;
@@ -452,6 +453,7 @@ export type TeamSettings = {
     EnableUserCreation: boolean;
     EnableOpenServer: boolean;
     EnableUserDeactivation: boolean;
+    EnableUsernameChange: boolean;
     RestrictCreationToDomains: string;
     EnableCustomBrand: boolean;
     CustomBrandText: string;

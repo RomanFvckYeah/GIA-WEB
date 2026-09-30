@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {FormattedMessage, useIntl} from 'react-intl';
+import {FormattedMessage} from 'react-intl';
 import {useDispatch, useSelector} from 'react-redux';
 
 import {ReportDuration} from '@mattermost/types/reports';
@@ -17,8 +17,6 @@ import {get} from 'mattermost-redux/selectors/entities/preferences';
 import {startUsersBatchExport} from 'actions/views/admin';
 import {openModal} from 'actions/views/modals';
 import {getAdminConsoleUserManagementTableProperties} from 'selectors/views/admin';
-
-import WithTooltip from 'components/with_tooltip';
 
 import {ModalIdentifiers} from 'utils/constants';
 import {isMinimumProfessionalLicense} from 'utils/license_utils';
@@ -37,8 +35,6 @@ interface Props {
 }
 
 export function SystemUsersExport(props: Props) {
-    const {formatMessage} = useIntl();
-
     const dispatch = useDispatch();
 
     const skipDialog = useSelector((state: GlobalState) => get(state, Preferences.CATEGORY_REPORTING, Preferences.HIDE_BATCH_EXPORT_CONFIRM_MODAL, '')) === 'true';
@@ -112,19 +108,7 @@ export function SystemUsersExport(props: Props) {
     );
 
     if (!isLicensed) {
-        return (
-            <>
-                <WithTooltip
-                    title={formatMessage({id: 'admin.system_users.exportButton.notLicensed.title', defaultMessage: 'Professional feature'})}
-                    hint={formatMessage({id: 'admin.system_users.exportButton.notLicensed.hint', defaultMessage: 'This feature is available on the professional plan'})}
-                >
-                    {button}
-                </WithTooltip>
-                <div className='system-users-export__keyIndicator'>
-                    <i className='icon icon-key-variant'/>
-                </div>
-            </>
-        );
+        return null;
     }
 
     return button;

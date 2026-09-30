@@ -170,6 +170,8 @@ export type Props = {
     samlPositionAttributeSet?: boolean;
     ldapPictureAttributeSet?: boolean;
     enableCustomProfileAttributes: boolean;
+    enableUsernameChange: boolean;
+    isCurrentUserSystemAdmin: boolean;
 }
 
 type State = {
@@ -1224,7 +1226,8 @@ export class UserSettingsGeneralTab extends PureComponent<Props, State> {
 
             let extraInfo;
             let submit = null;
-            if (this.props.user.auth_service === '') {
+            const canEditUsername = this.props.enableUsernameChange || this.props.isCurrentUserSystemAdmin;
+            if (this.props.user.auth_service === '' && canEditUsername) {
                 let usernameLabel: JSX.Element | string = (
                     <FormattedMessage
                         id='user.settings.general.username'
@@ -1284,6 +1287,15 @@ export class UserSettingsGeneralTab extends PureComponent<Props, State> {
                 );
 
                 submit = this.submitUsername;
+            } else if (this.props.user.auth_service === '') {
+                extraInfo = (
+                    <span>
+                        <FormattedMessage
+                            id='user.settings.general.usernameChangeDisabled'
+                            defaultMessage='Username changes have been disabled by your administrator.'
+                        />
+                    </span>
+                );
             } else {
                 extraInfo = (
                     <span>

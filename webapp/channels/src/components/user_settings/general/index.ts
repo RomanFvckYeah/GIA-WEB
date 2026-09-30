@@ -15,6 +15,7 @@ import {
     getCustomProfileAttributeValues,
 } from 'mattermost-redux/actions/users';
 import {getConfig, getCustomProfileAttributes, getFeatureFlagValue} from 'mattermost-redux/selectors/entities/general';
+import {isCurrentUserSystemAdmin} from 'mattermost-redux/selectors/entities/users';
 
 import {getIsMobileView} from 'selectors/views/browser';
 
@@ -37,6 +38,7 @@ function mapStateToProps(state: GlobalState) {
     const samlPositionAttributeSet = config.SamlPositionAttributeSet === 'true';
     const ldapPositionAttributeSet = config.LdapPositionAttributeSet === 'true';
     const ldapPictureAttributeSet = config.LdapPictureAttributeSet === 'true';
+    const enableUsernameChange = config.EnableUsernameChange === 'true';
 
     // Deliberately not gated on license tier, unlike upstream: User Attributes is not an
     // Enterprise-licensed feature in this fork.
@@ -57,6 +59,8 @@ function mapStateToProps(state: GlobalState) {
         ldapPositionAttributeSet,
         ldapPictureAttributeSet,
         enableCustomProfileAttributes,
+        enableUsernameChange,
+        isCurrentUserSystemAdmin: isCurrentUserSystemAdmin(state),
     };
 }
 

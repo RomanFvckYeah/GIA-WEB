@@ -2429,6 +2429,7 @@ type TeamSettings struct {
 	EnableUserCreation              *bool             `access:"authentication_signup"`
 	EnableOpenServer                *bool             `access:"authentication_signup"`
 	EnableUserDeactivation          *bool             `access:"experimental_features"`
+	EnableUsernameChange            *bool             `access:"site_users_and_teams"`
 	RestrictCreationToDomains       *string           `access:"authentication_signup"` // telemetry: none
 	EnableCustomUserStatuses        *bool             `access:"site_users_and_teams"`
 	EnableCustomBrand               *bool             `access:"site_customization"`
@@ -2493,6 +2494,10 @@ func (s *TeamSettings) SetDefaults() {
 
 	if s.EnableUserDeactivation == nil {
 		s.EnableUserDeactivation = NewPointer(false)
+	}
+
+	if s.EnableUsernameChange == nil {
+		s.EnableUsernameChange = NewPointer(true)
 	}
 
 	if s.CustomBrandText == nil {
@@ -3888,6 +3893,15 @@ type CoviaSettings struct {
 	Enable  *bool   `access:"environment"`
 	BaseURL *string `access:"environment"`
 	APIKey  *string `access:"environment"`
+
+	// EnableGroupDeleteSync/EnableGroupRenameSync gate the "delete group"/"rename group" Covia
+	// endpoints specifically — separate from Enable because, unlike create/add/remove member,
+	// Covia doesn't have these two endpoints yet. Disabled (false) by default: while off, deleting
+	// or renaming a group locally never even attempts to call Covia and always succeeds, exactly
+	// like today. Once Covia's team confirms these endpoints exist, flipping these on makes local
+	// delete/rename require Covia's confirmation first, same as create/add/remove member already do.
+	EnableGroupDeleteSync *bool `access:"environment"`
+	EnableGroupRenameSync *bool `access:"environment"`
 }
 
 func (s *CoviaSettings) SetDefaults() {
@@ -3901,6 +3915,14 @@ func (s *CoviaSettings) SetDefaults() {
 
 	if s.APIKey == nil {
 		s.APIKey = NewPointer("")
+	}
+
+	if s.EnableGroupDeleteSync == nil {
+		s.EnableGroupDeleteSync = NewPointer(false)
+	}
+
+	if s.EnableGroupRenameSync == nil {
+		s.EnableGroupRenameSync = NewPointer(false)
 	}
 }
 

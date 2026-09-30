@@ -1,7 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Modal} from 'react-bootstrap';
 import {useIntl} from 'react-intl';
 import {useDispatch, useSelector} from 'react-redux';
@@ -17,11 +17,13 @@ import {
 } from 'mattermost-redux/actions/operational_tracking_groups';
 import {getTeamOrganizationMembers} from 'mattermost-redux/actions/teams';
 import {getProfilesByIds} from 'mattermost-redux/actions/users';
-import {getUsers} from 'mattermost-redux/selectors/entities/users';
+import {getCurrentUserId, getUsers} from 'mattermost-redux/selectors/entities/users';
 
 import type {Column, Row} from 'components/admin_console/data_grid/data_grid';
 import DataGrid from 'components/admin_console/data_grid/data_grid';
+import ConfirmModal from 'components/confirm_modal';
 
+import EditOperationalTrackingGroupNameModal from './edit_operational_tracking_group_name_modal';
 import {logSent, logResult} from './operational_tracking_debug';
 import UserNameCell from './user_name_cell';
 
@@ -31,16 +33,25 @@ type Props = {
     group: OperationalTrackingGroup;
     onExited: () => void;
 
-    // Called after any change that affects the parent group list's member count (add/remove
-    // member) or its contents (delete group) — lets the caller refresh its own table.
-    onChanged: () => void;
+    // Called (with +1/-1) right after a member is successfully added/removed, so the parent's
+    // group list can update that group's member count without waiting on a refetch.
+    onMemberCountChanged: (delta: number) => void;
+
+    // Called right after the group is successfully deleted, so the parent can drop it from its
+    // list without waiting on a refetch.
+    onDeleted: () => void;
+
+    // Called right after the group is successfully renamed, so the parent can update its list
+    // without waiting on a refetch.
+    onRenamed: (newName: string) => void;
 };
 
-const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props) => {
+const ManageOperationalTrackingGroupModal = ({group, onExited, onMemberCountChanged, onDeleted, onRenamed}: Props) => {
     const {formatMessage} = useIntl();
     const dispatch = useDispatch();
 
     const allUsersById = useSelector(getUsers);
+    const currentUserId = useSelector(getCurrentUserId);
 
     const [show, setShow] = useState(true);
     const [loading, setLoading] = useState(true);
@@ -51,9 +62,17 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
     const [eligibleTerm, setEligibleTerm] = useState('');
     const [eligiblePage, setEligiblePage] = useState(0);
     const [error, setError] = useState<string | null>(null);
-    const [deleting, setDeleting] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showEditName, setShowEditName] = useState(false);
+    const [pendingRemoveUserId, setPendingRemoveUserId] = useState<string | null>(null);
+
+    // Guards against an earlier-issued-but-later-resolving refresh() call overwriting state that
+    // a more recent refresh() call already applied.
+    const refreshRequestIdRef = useRef(0);
 
     const refresh = useCallback(() => {
+        const requestId = ++refreshRequestIdRef.current;
         setLoading(true);
         logSent('getOperationalTrackingGroupMembers', {groupId: group.id});
         logSent('getTeamOrganizationMembers', {teamId: group.team_id});
@@ -63,6 +82,9 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
         ]).then(([membersResult, orgResult]) => {
             logResult('getOperationalTrackingGroupMembers', membersResult);
             logResult('getTeamOrganizationMembers', orgResult);
+            if (requestId !== refreshRequestIdRef.current) {
+                return;
+            }
             if ('data' in membersResult && membersResult.data) {
                 const memberRows = membersResult.data as OperationalTrackingGroupMember[];
                 setMembers(memberRows);
@@ -125,44 +147,90 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
     };
 
     const handleAdd = async (userId: string) => {
+        if (busy) {
+            return;
+        }
+        setBusy(true);
         setError(null);
         logSent('addOperationalTrackingGroupMember', {groupId: group.id, userId});
         const result = await dispatch(addOperationalTrackingGroupMember(group.id, userId));
         logResult('addOperationalTrackingGroupMember', result);
+        setBusy(false);
         if ('error' in result && result.error) {
-            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.addFailed', defaultMessage: 'Failed to add member'}));
+            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.addFailed', defaultMessage: 'Could not add the member — Covia did not confirm it, so nothing was saved.'}));
             return;
         }
-        refresh();
-        onChanged();
+
+        // Apply the change to local state directly instead of waiting on a refetch — the server
+        // already told us it succeeded, so there's no reason the list should lag behind it.
+        setMembers((prev) => (prev.some((m) => m.user_id === userId) ? prev : [
+            ...prev,
+            {group_id: group.id, user_id: userId, create_at: Date.now(), create_by: currentUserId},
+        ]));
+        onMemberCountChanged(1);
     };
 
-    const handleRemove = async (userId: string) => {
+    // Only ever called after the user confirms via the ConfirmModal below.
+    const doRemove = async (userId: string) => {
+        if (busy) {
+            return;
+        }
+        setBusy(true);
         setError(null);
         logSent('removeOperationalTrackingGroupMember', {groupId: group.id, userId});
         const result = await dispatch(removeOperationalTrackingGroupMember(group.id, userId));
         logResult('removeOperationalTrackingGroupMember', result);
+        setBusy(false);
         if ('error' in result && result.error) {
-            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.removeFailed', defaultMessage: 'Failed to remove member'}));
+            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.removeFailed', defaultMessage: 'Could not remove the member — Covia did not confirm it, so nothing was saved.'}));
             return;
         }
-        refresh();
-        onChanged();
+
+        // Apply the change to local state directly instead of waiting on a refetch — the server
+        // already told us it succeeded, so there's no reason the list should lag behind it.
+        setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+        onMemberCountChanged(-1);
     };
 
-    const handleDeleteGroup = async () => {
-        setDeleting(true);
+    const handleRemove = (userId: string) => {
+        if (busy) {
+            return;
+        }
+        setPendingRemoveUserId(userId);
+    };
+
+    // Only ever called after the user confirms via the ConfirmModal below.
+    const doDeleteGroup = async () => {
+        if (busy) {
+            return;
+        }
+        setBusy(true);
         setError(null);
         logSent('deleteOperationalTrackingGroup', {groupId: group.id});
         const result = await dispatch(deleteOperationalTrackingGroup(group.id));
         logResult('deleteOperationalTrackingGroup', result);
-        setDeleting(false);
+        setBusy(false);
         if ('error' in result && result.error) {
-            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.deleteFailed', defaultMessage: 'Failed to delete group'}));
+            setError(result.error.message ?? formatMessage({id: 'team_statistics.operationalTracking.manage.deleteFailed', defaultMessage: 'Could not delete the group — Covia did not confirm it, so nothing was deleted.'}));
             return;
         }
-        onChanged();
+
+        onDeleted();
         doHide();
+    };
+
+    const handleDeleteGroup = () => {
+        if (busy) {
+            return;
+        }
+        setShowDeleteConfirm(true);
+    };
+
+    const handleEditName = () => {
+        if (busy) {
+            return;
+        }
+        setShowEditName(true);
     };
 
     const memberColumns: Column[] = [
@@ -213,6 +281,7 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
                         type='button'
                         className='style--none color--link'
                         onClick={() => handleRemove(user.id)}
+                        disabled={busy}
                     >
                         {formatMessage({id: 'team_statistics.operationalTracking.manage.remove', defaultMessage: 'Remove'})}
                     </button>
@@ -231,6 +300,7 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
                     type='button'
                     className='style--none color--link'
                     onClick={() => handleAdd(user.id)}
+                    disabled={busy}
                 >
                     {formatMessage({id: 'team_statistics.operationalTracking.manage.add', defaultMessage: 'Add'})}
                 </button>
@@ -310,8 +380,16 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
                 <button
                     type='button'
                     className='btn btn-tertiary btn-sm'
+                    onClick={handleEditName}
+                    disabled={busy}
+                >
+                    {formatMessage({id: 'team_statistics.operationalTracking.manage.editName', defaultMessage: 'Edit name'})}
+                </button>
+                <button
+                    type='button'
+                    className='btn btn-tertiary btn-sm'
                     onClick={handleDeleteGroup}
-                    disabled={deleting}
+                    disabled={busy}
                 >
                     {formatMessage({id: 'team_statistics.operationalTracking.manage.deleteGroup', defaultMessage: 'Delete group'})}
                 </button>
@@ -323,6 +401,44 @@ const ManageOperationalTrackingGroupModal = ({group, onExited, onChanged}: Props
                     {formatMessage({id: 'team_statistics.operationalTracking.manage.close', defaultMessage: 'Close'})}
                 </button>
             </Modal.Footer>
+            {showDeleteConfirm && (
+                <ConfirmModal
+                    show={true}
+                    isStacked={true}
+                    title={formatMessage({id: 'team_statistics.operationalTracking.manage.deleteConfirmTitle', defaultMessage: 'Delete group?'})}
+                    message={formatMessage({id: 'team_statistics.operationalTracking.manage.deleteConfirmMessage', defaultMessage: 'This will also remove its members from Covia. This action cannot be undone.'})}
+                    confirmButtonText={formatMessage({id: 'team_statistics.operationalTracking.manage.deleteGroup', defaultMessage: 'Delete group'})}
+                    confirmButtonClass='btn btn-danger'
+                    onConfirm={() => {
+                        setShowDeleteConfirm(false);
+                        doDeleteGroup();
+                    }}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                />
+            )}
+            {pendingRemoveUserId && (
+                <ConfirmModal
+                    show={true}
+                    isStacked={true}
+                    title={formatMessage({id: 'team_statistics.operationalTracking.manage.removeConfirmTitle', defaultMessage: 'Remove member?'})}
+                    message={formatMessage({id: 'team_statistics.operationalTracking.manage.removeConfirmMessage', defaultMessage: 'This will also remove this user from the group in Covia.'})}
+                    confirmButtonText={formatMessage({id: 'team_statistics.operationalTracking.manage.remove', defaultMessage: 'Remove'})}
+                    confirmButtonClass='btn btn-danger'
+                    onConfirm={() => {
+                        const userId = pendingRemoveUserId;
+                        setPendingRemoveUserId(null);
+                        doRemove(userId);
+                    }}
+                    onCancel={() => setPendingRemoveUserId(null)}
+                />
+            )}
+            {showEditName && (
+                <EditOperationalTrackingGroupNameModal
+                    group={group}
+                    onExited={() => setShowEditName(false)}
+                    onRenamed={onRenamed}
+                />
+            )}
         </Modal>
     );
 };
