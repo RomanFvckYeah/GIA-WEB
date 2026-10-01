@@ -55,6 +55,7 @@ services:
       MM_EMAILSETTINGS_SMTPPORT: ${SMTP_PORT}
       MM_EMAILSETTINGS_SMTPUSERNAME: ${SMTP_USERNAME}
       MM_EMAILSETTINGS_SMTPPASSWORD: ${SMTP_PASSWORD}
+      MM_EMAILSETTINGS_CONNECTIONSECURITY: "TLS"
     volumes:
       - ./volumes/config:/mattermost/config
       - ./volumes/data:/mattermost/data
