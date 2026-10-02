@@ -292,6 +292,7 @@ const TeamUsersTab = () => {
             {selectedUser && (
                 <EditUserModal
                     user={selectedUser}
+                    isTargetTeamAdmin={Boolean(teamMembers[selectedUser.id]?.scheme_admin)}
                     onExited={() => setSelectedUser(null)}
                     onSaved={() => setRefreshKey((k) => k + 1)}
                 />

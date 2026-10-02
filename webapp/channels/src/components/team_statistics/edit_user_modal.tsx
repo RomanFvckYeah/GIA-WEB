@@ -36,6 +36,12 @@ import CustomAttributeFields from './custom_attribute_fields';
 
 type Props = {
     user: UserProfile;
+
+    // Whether `user` holds the team_admin role for the current team. Team-admin status lives
+    // on the team membership, not on UserProfile itself, so the caller (team_users_tab.tsx,
+    // which already has the member list loaded) computes and passes this in.
+    isTargetTeamAdmin?: boolean;
+
     onExited: () => void;
 
     // Called right after a successful save (not on cancel or a failed save) — lets the caller
@@ -45,7 +51,7 @@ type Props = {
     onSaved?: () => void;
 };
 
-const EditUserModal = ({user, onExited, onSaved}: Props) => {
+const EditUserModal = ({user, isTargetTeamAdmin: targetHasTeamAdminRole, onExited, onSaved}: Props) => {
     const {formatMessage} = useIntl();
     const dispatch = useDispatch();
     const passwordConfig = useSelector(getPasswordConfig);
@@ -77,6 +83,12 @@ const EditUserModal = ({user, onExited, onSaved}: Props) => {
     // (canEditManaged) is exempt from this, same as the server.
     const isTargetSystemAdmin = !canEditManaged && user.roles.includes('system_admin');
 
+    // Same idea as isTargetSystemAdmin, but for team_admin — the server blocks a team_admin
+    // from managing (including resetting the password of) a fellow team_admin of the same
+    // team (SessionHasPermissionToUserViaTeamAdmin, server/channels/app/authorization.go). A
+    // system_admin caller (canEditManaged) is exempt, same as for system_admin targets.
+    const isTargetTeamAdmin = !canEditManaged && !isTargetSystemAdmin && Boolean(targetHasTeamAdminRole);
+
     // A system_admin marks (team, user) pairs as genuine organization members of the
     // current team; a team_admin can only edit users they share organization membership
     // with (see SessionHasPermissionToUserViaTeamAdmin, server/channels/app/authorization.go).
@@ -85,7 +97,7 @@ const EditUserModal = ({user, onExited, onSaved}: Props) => {
     // own SessionHasPermissionToUserOrBot/PermissionManageSystem bypass.
     const isSameOrganization = canEditManaged || (orgMemberIds.has(user.id) && orgMemberIds.has(currentUserId));
 
-    const fieldsDisabled = loading || isTargetSystemAdmin || !isSameOrganization;
+    const fieldsDisabled = loading || isTargetSystemAdmin || isTargetTeamAdmin || !isSameOrganization;
 
     // The server requires your OWN current password to reset your OWN password
     // (server/channels/api4/user.go) — a real security measure, not a bug, so this isn't
@@ -287,12 +299,17 @@ const EditUserModal = ({user, onExited, onSaved}: Props) => {
                         {formatMessage({id: 'team_statistics.users.edit.systemAdminHint', defaultMessage: 'System administrator accounts cannot be edited from this panel.'})}
                     </div>
                 )}
-                {!isTargetSystemAdmin && !isSameOrganization && (
+                {isTargetTeamAdmin && (
+                    <div className='team-statistics-edit-user-modal__hint'>
+                        {formatMessage({id: 'team_statistics.users.edit.teamAdminHint', defaultMessage: 'Team administrator accounts cannot be edited from this panel. Only a system administrator can manage them.'})}
+                    </div>
+                )}
+                {!isTargetSystemAdmin && !isTargetTeamAdmin && !isSameOrganization && (
                     <div className='team-statistics-edit-user-modal__hint'>
                         {formatMessage({id: 'team_statistics.users.edit.notSameOrganizationHint', defaultMessage: 'This user does not share organization membership with you in this team and cannot be edited from this panel.'})}
                     </div>
                 )}
-                {!isTargetSystemAdmin && isSameOrganization && isOwnAccount && (
+                {!isTargetSystemAdmin && !isTargetTeamAdmin && isSameOrganization && isOwnAccount && (
                     <div className='team-statistics-edit-user-modal__hint'>
                         {formatMessage({id: 'team_statistics.users.edit.ownAccountResetHint', defaultMessage: 'To reset your own password, use Account Settings instead.'})}
                     </div>

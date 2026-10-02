@@ -4441,6 +4441,7 @@
   "team_statistics.users.edit.position": "Posición",
   "team_statistics.users.edit.notSameOrganizationHint": "Este usuario no comparte organización contigo en este equipo y no puede ser editado desde este panel.",
   "team_statistics.users.edit.systemAdminHint": "No se pueden editar cuentas de administradores del sistema desde este panel.",
+  "team_statistics.users.edit.teamAdminHint": "No se pueden editar cuentas de administradores de equipo desde este panel. Solo un administrador del sistema puede gestionarlas.",
   "team_statistics.users.edit.panicButtonOnlyRemoveHint": "Esta cuenta podrá volver a agregarse a un equipo, pero no se agregará automáticamente.",
   "team_statistics.users.customAttributes.selectOption": "Selecciona una opción",
   "team_statistics.users.customAttributes.selectOptions": "Selecciona opciones...",

@@ -97,12 +97,20 @@ func (a *App) SessionHasPermissionToTeams(rctx request.CTX, session model.Sessio
 // PermissionSysconsoleWriteUserManagementUsers) have no native team scope, so this lets a
 // team_admin manage accounts of fellow organization members in their own team(s) without
 // granting them server-wide user-management permissions.
+//
+// A team membership where the target already holds the team_admin role is skipped — a
+// team_admin must not be able to manage (e.g. reset the password of) a fellow team_admin
+// through this path. Only a genuine system_admin (PermissionManageSystem) can do that, the
+// same way system_admin accounts are already protected via IsSystemAdmin() elsewhere.
 func (a *App) SessionHasPermissionToUserViaTeamAdmin(rctx request.CTX, session model.Session, userID string) bool {
 	teamMembers, err := a.GetTeamMembersForUser(rctx, userID, "", false)
 	if err != nil {
 		return false
 	}
 	for _, tm := range teamMembers {
+		if slices.Contains(tm.GetRoles(), model.TeamAdminRoleId) {
+			continue
+		}
 		if a.SessionHasPermissionToTeam(session, tm.TeamId, model.PermissionManageTeam) &&
 			a.IsUserOrgMemberOfTeam(rctx, tm.TeamId, userID) &&
 			a.IsUserOrgMemberOfTeam(rctx, tm.TeamId, session.UserId) {

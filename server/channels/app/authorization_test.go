@@ -2320,3 +2320,54 @@ func TestSessionHasPermissionToOrgMemberViaTeamAdmin(t *testing.T) {
 		require.False(t, th.App.SessionHasPermissionToOrgMemberViaTeamAdmin(th.Context, regularMemberSession, targetUser.Id))
 	})
 }
+
+func TestSessionHasPermissionToUserViaTeamAdmin(t *testing.T) {
+	th := Setup(t).InitBasic(t)
+
+	team := th.CreateTeam(t)
+	targetUser := th.CreateUser(t)
+	th.LinkUserToTeam(t, targetUser, team)
+
+	teamAdminSession := model.Session{
+		UserId: th.BasicUser.Id,
+		Roles:  model.SystemUserRoleId,
+		TeamMembers: []*model.TeamMember{
+			{TeamId: team.Id, Roles: model.TeamAdminRoleId},
+		},
+	}
+
+	addBothAsOrgMembers := func(t *testing.T) func() {
+		t.Helper()
+		require.Nil(t, th.App.AddUserToTeamOrganization(th.Context, team.Id, targetUser.Id, th.BasicUser.Id))
+		require.Nil(t, th.App.AddUserToTeamOrganization(th.Context, team.Id, th.BasicUser.Id, th.BasicUser.Id))
+		return func() {
+			require.Nil(t, th.App.RemoveUserFromTeamOrganization(th.Context, team.Id, targetUser.Id))
+			require.Nil(t, th.App.RemoveUserFromTeamOrganization(th.Context, team.Id, th.BasicUser.Id))
+		}
+	}
+
+	t.Run("true when target is a regular team member and both are org members", func(t *testing.T) {
+		cleanup := addBothAsOrgMembers(t)
+		defer cleanup()
+
+		require.True(t, th.App.SessionHasPermissionToUserViaTeamAdmin(th.Context, teamAdminSession, targetUser.Id))
+	})
+
+	t.Run("false when the target is ALSO a team_admin of that team — a team_admin must not manage a fellow team_admin", func(t *testing.T) {
+		cleanup := addBothAsOrgMembers(t)
+		defer cleanup()
+
+		_, appErr := th.App.UpdateTeamMemberRoles(th.Context, team.Id, targetUser.Id, model.TeamUserRoleId+" "+model.TeamAdminRoleId)
+		require.Nil(t, appErr)
+		defer func() {
+			_, appErr := th.App.UpdateTeamMemberRoles(th.Context, team.Id, targetUser.Id, model.TeamUserRoleId)
+			require.Nil(t, appErr)
+		}()
+
+		require.False(t, th.App.SessionHasPermissionToUserViaTeamAdmin(th.Context, teamAdminSession, targetUser.Id))
+	})
+
+	t.Run("false when target is not an org member", func(t *testing.T) {
+		require.False(t, th.App.SessionHasPermissionToUserViaTeamAdmin(th.Context, teamAdminSession, targetUser.Id))
+	})
+}
