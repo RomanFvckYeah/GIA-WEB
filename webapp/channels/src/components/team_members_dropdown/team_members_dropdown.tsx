@@ -175,8 +175,8 @@ class TeamMembersDropdown extends React.PureComponent<Props, State> {
         }
 
         const me = this.props.currentUser;
-        let showMakeMember = !isGuest(user.roles) && (isAdmin(teamMember.roles) || teamMember.scheme_admin) && !isSystemAdmin(user.roles);
-        let showMakeAdmin = !isGuest(user.roles) && !isAdmin(teamMember.roles) && !isSystemAdmin(user.roles) && !teamMember.scheme_admin;
+        let showMakeMember = !isGuest(user.roles) && (isAdmin(teamMember.roles) || teamMember.scheme_admin) && !isSystemAdmin(user.roles) && (isSystemAdmin(me.roles) || user.id === me.id);
+        let showMakeAdmin = !isGuest(user.roles) && !isAdmin(teamMember.roles) && !isSystemAdmin(user.roles) && !teamMember.scheme_admin && isSystemAdmin(me.roles);
 
         if (user.delete_at > 0) {
             currentRoles = (
@@ -189,7 +189,7 @@ class TeamMembersDropdown extends React.PureComponent<Props, State> {
             showMakeAdmin = false;
         }
 
-        const canRemoveFromTeam = user.id !== me.id && (!currentTeam?.group_constrained || user.is_bot);
+        const canRemoveFromTeam = user.id !== me.id && (!currentTeam?.group_constrained || user.is_bot) && isSystemAdmin(me.roles);
 
         let makeDemoteModal = null;
         if (user.id === me.id) {

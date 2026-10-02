@@ -3529,6 +3529,16 @@ func TestRemoveTeamMember(t *testing.T) {
 	require.Error(t, err)
 	CheckForbiddenStatus(t, resp)
 
+	// a team_admin (not system_admin) is also blocked from removing someone else -- only a
+	// real system_admin can remove a member from a team
+	_, err = th.SystemAdminClient.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, &model.SchemeRoles{SchemeAdmin: true, SchemeUser: true})
+	require.NoError(t, err)
+	resp, err = client.RemoveTeamMember(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id)
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
+	_, err = th.SystemAdminClient.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, &model.SchemeRoles{SchemeAdmin: false, SchemeUser: true})
+	require.NoError(t, err)
+
 	th.TestForAllClients(t, func(t *testing.T, client *model.Client4) {
 		resp, err = client.RemoveTeamMember(context.Background(), model.NewId(), th.BasicUser.Id)
 		require.Error(t, err)
@@ -3677,11 +3687,13 @@ func TestUpdateTeamMemberRoles(t *testing.T) {
 	_, err = SystemAdminClient.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, TeamAdmin)
 	require.NoError(t, err)
 
-	// user 1 (team admin) promotes user 2
-	_, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamAdmin)
-	require.NoError(t, err)
+	// user 1 (team admin, not system admin) tries to promote user 2 to team admin -- blocked,
+	// only a real system admin may grant the team_admin role
+	resp, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamAdmin)
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
 
-	// user 1 (team admin) demotes user 2 (team admin)
+	// user 1 (team admin) can still demote a member (no-op here since user 2 was never promoted)
 	_, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamMember)
 	require.NoError(t, err)
 
@@ -3704,6 +3716,12 @@ func TestUpdateTeamMemberRoles(t *testing.T) {
 	_, err = SystemAdminClient.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamAdmin)
 	require.NoError(t, err)
 
+	// user 1 (team admin, not system admin) tries to demote a fellow team admin -- blocked,
+	// only a real system admin can strip another team_admin of their role
+	resp, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamMember)
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
+
 	// system admin demotes user 2 (team admin)
 	_, err = SystemAdminClient.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, TeamMember)
 	require.NoError(t, err)
@@ -3713,10 +3731,11 @@ func TestUpdateTeamMemberRoles(t *testing.T) {
 	require.Error(t, err)
 	CheckForbiddenStatus(t, resp)
 
-	// user 1 (team admin) tries to promote a random user
+	// user 1 (team admin) tries to promote a random user -- blocked on the team_admin
+	// permission check before the server ever looks up whether that user is a member
 	resp, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, model.NewId(), TeamAdmin)
 	require.Error(t, err)
-	CheckNotFoundStatus(t, resp)
+	CheckForbiddenStatus(t, resp)
 
 	// user 1 (team admin) tries to promote invalid team permission
 	resp, err = client.UpdateTeamMemberRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, "junk")
@@ -3804,6 +3823,28 @@ func TestUpdateTeamMemberSchemeRoles(t *testing.T) {
 	assert.Equal(t, false, tm3.SchemeGuest)
 	assert.Equal(t, true, tm3.SchemeUser)
 	assert.Equal(t, true, tm3.SchemeAdmin)
+
+	// th.BasicUser is now a team admin (not system admin) on th.BasicTeam. They should still
+	// be blocked from promoting a fellow member to team_admin -- only a system admin can grant it.
+	resp, err = th.Client.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, s3)
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
+
+	// demoting YOURSELF out of team_admin is still allowed (not a peer attack)
+	s3Demoted := &model.SchemeRoles{SchemeAdmin: false, SchemeUser: true, SchemeGuest: false}
+	_, err = th.Client.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, s3Demoted)
+	require.NoError(t, err)
+	_, err = SystemAdminClient.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser.Id, s3)
+	require.NoError(t, err) // restore for the rest of the test
+
+	// but demoting a FELLOW team admin is blocked, same as promoting one
+	_, err = SystemAdminClient.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, s3)
+	require.NoError(t, err) // system admin promotes user 2 to team_admin first
+	resp, err = th.Client.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, s3Demoted)
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
+	_, err = SystemAdminClient.UpdateTeamMemberSchemeRoles(context.Background(), th.BasicTeam.Id, th.BasicUser2.Id, s3Demoted)
+	require.NoError(t, err) // restore
 
 	s4 := &model.SchemeRoles{
 		SchemeAdmin: false,

@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -1133,9 +1134,11 @@ func removeTeamMember(c *Context, w http.ResponseWriter, r *http.Request) {
 	auditRec := c.MakeAuditRecord(model.AuditEventRemoveTeamMember, model.AuditStatusFail)
 	defer c.LogAuditRec(auditRec)
 
+	// A team_admin has PermissionRemoveUserFromTeam over their own team by default. This
+	// deployment requires a real system_admin to remove anyone else from a team.
 	if c.AppContext.Session().UserId != c.Params.UserId {
-		if !c.App.SessionHasPermissionToTeam(*c.AppContext.Session(), c.Params.TeamId, model.PermissionRemoveUserFromTeam) {
-			c.SetPermissionError(model.PermissionRemoveUserFromTeam)
+		if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+			c.SetPermissionError(model.PermissionManageSystem)
 			return
 		}
 	}
@@ -1159,16 +1162,6 @@ func removeTeamMember(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	if team.IsGroupConstrained() && (c.Params.UserId != c.AppContext.Session().UserId) && !user.IsBot {
 		c.Err = model.NewAppError("removeTeamMember", "api.team.remove_member.group_constrained.app_error", nil, "", http.StatusBadRequest)
-		return
-	}
-
-	// See the matching check in api4/channel.go's removeChannelMember for why this is
-	// separate from the remove_user_from_team permission check above.
-	if c.Params.UserId != c.AppContext.Session().UserId &&
-		!c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) &&
-		(!c.App.IsUserOrgMemberOfTeam(c.AppContext, c.Params.TeamId, c.Params.UserId) ||
-			!c.App.IsUserOrgMemberOfTeam(c.AppContext, c.Params.TeamId, c.AppContext.Session().UserId)) {
-		c.Err = model.NewAppError("removeTeamMember", "api.team.remove_member.not_same_organization.app_error", nil, "", http.StatusForbidden)
 		return
 	}
 
@@ -1259,6 +1252,23 @@ func updateTeamMemberRoles(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A team_admin has PermissionManageTeamRoles over their own team by default, which would
+	// otherwise let them promote fellow members to team_admin without any system_admin oversight.
+	// Only a real system_admin may grant the team_admin role.
+	if slices.Contains(strings.Fields(newRoles), model.TeamAdminRoleId) && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		c.SetPermissionError(model.PermissionManageSystem)
+		return
+	}
+
+	// Same restriction in the other direction: a team_admin can't strip a fellow team_admin
+	// of their role either, only a real system_admin can. Demoting yourself is still allowed.
+	if !slices.Contains(strings.Fields(newRoles), model.TeamAdminRoleId) && c.Params.UserId != c.AppContext.Session().UserId && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		if currentMember, memberErr := c.App.GetTeamMember(c.AppContext, c.Params.TeamId, c.Params.UserId); memberErr == nil && currentMember.SchemeAdmin {
+			c.SetPermissionError(model.PermissionManageSystem)
+			return
+		}
+	}
+
 	teamMember, err := c.App.UpdateTeamMemberRoles(c.AppContext, c.Params.TeamId, c.Params.UserId, newRoles)
 	if err != nil {
 		c.Err = err
@@ -1291,6 +1301,22 @@ func updateTeamMemberSchemeRoles(c *Context, w http.ResponseWriter, r *http.Requ
 	if !c.App.SessionHasPermissionToTeam(*c.AppContext.Session(), c.Params.TeamId, model.PermissionManageTeamRoles) {
 		c.SetPermissionError(model.PermissionManageTeamRoles)
 		return
+	}
+
+	// Same restriction as updateTeamMemberRoles above: team_admin can't grant team_admin to
+	// a peer, only a real system_admin can.
+	if schemeRoles.SchemeAdmin && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		c.SetPermissionError(model.PermissionManageSystem)
+		return
+	}
+
+	// Same restriction in the other direction: a team_admin can't strip a fellow team_admin
+	// of their role either, only a real system_admin can. Demoting yourself is still allowed.
+	if !schemeRoles.SchemeAdmin && c.Params.UserId != c.AppContext.Session().UserId && !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
+		if currentMember, memberErr := c.App.GetTeamMember(c.AppContext, c.Params.TeamId, c.Params.UserId); memberErr == nil && currentMember.SchemeAdmin {
+			c.SetPermissionError(model.PermissionManageSystem)
+			return
+		}
 	}
 
 	teamMember, err := c.App.UpdateTeamMemberSchemeRoles(c.AppContext, c.Params.TeamId, c.Params.UserId, schemeRoles.SchemeGuest, schemeRoles.SchemeUser, schemeRoles.SchemeAdmin)
