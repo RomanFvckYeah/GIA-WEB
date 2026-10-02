@@ -122,6 +122,7 @@ type SqlStoreStores struct {
 	globallyDiscoverableUser   store.GloballyDiscoverableUserStore
 	panicButtonOnlyUser        store.PanicButtonOnlyUserStore
 	operationalTrackingGroup   store.OperationalTrackingGroupStore
+	welcomeBotReport           store.WelcomeBotReportStore
 }
 
 type SqlStore struct {
@@ -318,6 +319,7 @@ func New(settings model.SqlSettings, logger mlog.LoggerIFace, metrics einterface
 	store.stores.globallyDiscoverableUser = newSqlGloballyDiscoverableUserStore(store)
 	store.stores.panicButtonOnlyUser = newSqlPanicButtonOnlyUserStore(store)
 	store.stores.operationalTrackingGroup = newSqlOperationalTrackingGroupStore(store)
+	store.stores.welcomeBotReport = newSqlWelcomeBotReportStore(store)
 
 	store.stores.preference.(*SqlPreferenceStore).deleteUnusedFeatures()
 
@@ -952,6 +954,10 @@ func (ss *SqlStore) PanicButtonOnlyUser() store.PanicButtonOnlyUserStore {
 
 func (ss *SqlStore) OperationalTrackingGroup() store.OperationalTrackingGroupStore {
 	return ss.stores.operationalTrackingGroup
+}
+
+func (ss *SqlStore) WelcomeBotReport() store.WelcomeBotReportStore {
+	return ss.stores.welcomeBotReport
 }
 
 func (ss *SqlStore) DropAllTables() {

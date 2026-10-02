@@ -128,6 +128,7 @@ import TeamSettings from './team_channel_settings/team';
 import TeamDetails from './team_channel_settings/team/details';
 import type {AdminDefinition as AdminDefinitionType} from './types';
 import ValidationResult from './validation';
+import WelcomeBotReportsPanel, {searchableStrings as welcomeBotReportsSearchableStrings} from './welcome_bot_reports/welcome_bot_reports_panel';
 import WelcomeFaqSetting from './welcome_faq_setting';
 import WorkspaceOptimizationDashboard from './workspace-optimization/dashboard';
 
@@ -2501,6 +2502,16 @@ const AdminDefinition: AdminDefinitionType = {
                         },
                         {
                             type: 'bool',
+                            key: 'TeamSettings.EnableWelcomeBotReports',
+                            label: defineMessage({id: 'admin.customization.welcomeBotReports.enableTitle', defaultMessage: 'Enable Report Button in Welcome Menu:'}),
+                            help_text: defineMessage({id: 'admin.customization.welcomeBotReports.enableDesc', defaultMessage: 'When true, the welcome menu also shows a button letting users submit a free-text report. Reports can be reviewed under Site Configuration > Welcome Bot Reports.'}),
+                            isDisabled: it.any(
+                                it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                                it.stateIsFalse('TeamSettings.EnableWelcomeMessageDM'),
+                            ),
+                        },
+                        {
+                            type: 'bool',
                             key: 'SupportSettings.EnableAskCommunityLink',
                             label: defineMessage({id: 'admin.support.enableAskCommunityTitle', defaultMessage: 'Enable Ask Community Link:'}),
                             help_text: defineMessage({id: 'admin.support.enableAskCommunityDesc', defaultMessage: 'When true, "Ask the community" link appears on the Mattermost user interface and Help Menu, which allows users to join the Mattermost Community to ask questions and help others troubleshoot issues. When false, the link is hidden from users.'}),
@@ -2697,6 +2708,17 @@ const AdminDefinition: AdminDefinitionType = {
                             },
                         },
                     ],
+                },
+            },
+            welcome_bot_reports: {
+                url: 'site_config/welcome_bot_reports',
+                title: defineMessage({id: 'admin.sidebar.welcomeBotReports', defaultMessage: 'Reportes del bot de bienvenida'}),
+                searchableStrings: welcomeBotReportsSearchableStrings,
+                isHidden: it.not(it.userHasReadPermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.CUSTOMIZATION)),
+                schema: {
+                    id: 'WelcomeBotReports',
+                    component: WelcomeBotReportsPanel,
                 },
             },
             localization: {

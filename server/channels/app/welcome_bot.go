@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/i18n"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/public/shared/request"
 )
 
@@ -17,6 +18,23 @@ import (
 // welcome menu. The webapp renders a dedicated component for it (buttons); other
 // clients fall back to post.Message (the prompt text).
 const welcomeMenuPostType = model.PostCustomTypePrefix + "gia_welcome_menu"
+
+// getWelcomeBot returns the System Bot and makes sure it is globally discoverable --
+// so an existing account (created before this feature existed, or on a team that
+// doesn't share one with it) can still find it in "start a DM" search and message
+// it directly to pull up the welcome menu, regardless of
+// TeamSettings.RestrictDirectMessage. Idempotent (ON CONFLICT DO NOTHING under the
+// hood), so it's fine to call this on every bot interaction.
+func (a *App) getWelcomeBot(rctx request.CTX) (*model.Bot, *model.AppError) {
+	bot, appErr := a.GetSystemBot(rctx)
+	if appErr != nil {
+		return nil, appErr
+	}
+	if appErr := a.AddGloballyDiscoverableUser(rctx, bot.UserId, bot.UserId); appErr != nil {
+		rctx.Logger().Warn("Failed to mark welcome bot as globally discoverable", mlog.Err(appErr))
+	}
+	return bot, nil
+}
 
 var welcomeFaqAccentReplacer = strings.NewReplacer(
 	"á", "a", "à", "a", "ä", "a", "â", "a",
@@ -62,11 +80,20 @@ func (a *App) welcomeFaqPrompt() string {
 	return prompt
 }
 
+// isReportTrigger reports whether text expresses the intent to file a report (e.g.
+// "quiero reportar un problema"), using the same accent/case-insensitive "contains"
+// matching as the FAQ items.
+func isReportTrigger(text string) bool {
+	norm := normalizeWelcomeFaqText(text)
+	return strings.Contains(norm, "reportar") || strings.Contains(norm, "reporte")
+}
+
 // postWelcomeMenu posts the interactive menu (prompt + option buttons) as the
 // system bot into the given DM channel.
 func (a *App) postWelcomeMenu(rctx request.CTX, channel *model.Channel, botUserID string) *model.AppError {
 	items := a.validWelcomeFaqItems()
-	if len(items) == 0 {
+	reportEnabled := a.welcomeBotReportsEnabled()
+	if len(items) == 0 && !reportEnabled {
 		return nil
 	}
 
@@ -86,8 +113,9 @@ func (a *App) postWelcomeMenu(rctx request.CTX, channel *model.Channel, botUserI
 		Message:   prompt,
 		Type:      welcomeMenuPostType,
 		Props: model.StringInterface{
-			"gia_welcome_prompt": prompt,
-			"gia_welcome_items":  menuItems,
+			"gia_welcome_prompt":         prompt,
+			"gia_welcome_items":          menuItems,
+			"gia_welcome_report_enabled": reportEnabled,
 		},
 	}
 
@@ -132,7 +160,7 @@ func (a *App) AnswerWelcomeFaq(rctx request.CTX, userID, optionID string) *model
 		return model.NewAppError("AnswerWelcomeFaq", "app.welcome_bot.invalid_option", nil, "", http.StatusBadRequest)
 	}
 
-	bot, appErr := a.GetSystemBot(rctx)
+	bot, appErr := a.getWelcomeBot(rctx)
 	if appErr != nil {
 		return appErr
 	}
@@ -157,9 +185,11 @@ func (a *App) AnswerWelcomeFaq(rctx request.CTX, userID, optionID string) *model
 
 // HandleWelcomeBotReply responds to a free-text message a user sends to the system
 // bot in a DM: it matches the message against the configured menu options and
-// replies with the matching answer (or a fallback), then re-posts the menu. It
-// mirrors the guards of the out-of-office auto-responder and is invoked from the
-// same place in handlePostEvents.
+// replies with the matching answer (or a fallback), then re-posts the menu -- this
+// is how an existing account (one created before the welcome DM was enabled, or
+// that just deleted it) can still pull up the menu/report button on demand by
+// simply messaging the bot. It mirrors the guards of the out-of-office
+// auto-responder and is invoked from the same place in handlePostEvents.
 func (a *App) HandleWelcomeBotReply(rctx request.CTX, channel *model.Channel, sender *model.User, post *model.Post) *model.AppError {
 	if channel.Type != model.ChannelTypeDirect {
 		return nil
@@ -170,7 +200,7 @@ func (a *App) HandleWelcomeBotReply(rctx request.CTX, channel *model.Channel, se
 	if post.Type != "" {
 		return nil
 	}
-	if !a.welcomeFaqEnabled() {
+	if !a.welcomeFaqEnabled() && !a.welcomeBotReportsEnabled() {
 		return nil
 	}
 
@@ -179,7 +209,7 @@ func (a *App) HandleWelcomeBotReply(rctx request.CTX, channel *model.Channel, se
 		return nil
 	}
 
-	bot, appErr := a.GetSystemBot(rctx)
+	bot, appErr := a.getWelcomeBot(rctx)
 	if appErr != nil {
 		return appErr
 	}
@@ -187,9 +217,36 @@ func (a *App) HandleWelcomeBotReply(rctx request.CTX, channel *model.Channel, se
 		return nil
 	}
 
+	// Two-step report flow, needed for a client without the interactive menu
+	// (mobile): the user first says something like "quiero reportar un problema"
+	// (isReportTrigger), the bot asks them to send the report as their next
+	// message, and THAT message -- whatever it says -- gets captured here because
+	// this user is now "pending" in WelcomeBotPendingReports. After it's captured,
+	// the flag is cleared and the menu/prompt shows again on the next message, same
+	// as any other reply.
+	reportsEnabled := a.welcomeBotReportsEnabled()
+	isPending := false
+	if reportsEnabled {
+		isPending, _ = a.Srv().Store().WelcomeBotReport().IsPending(sender.Id)
+	}
+
 	message := i18n.GetUserTranslations(sender.Locale)("app.welcome_bot.no_match")
-	if item := a.matchWelcomeFaqItem(post.Message); item != nil {
+	repostMenu := true
+
+	if isPending {
+		_ = a.Srv().Store().WelcomeBotReport().ClearPending(sender.Id)
+		if _, appErr := a.saveWelcomeBotReport(sender.Id, post.Message); appErr == nil {
+			message = i18n.GetUserTranslations(sender.Locale)("app.welcome_bot.report_submitted")
+		}
+	} else if item := a.matchWelcomeFaqItem(post.Message); item != nil {
 		message = strings.TrimSpace(*item.Answer)
+	} else if reportsEnabled && isReportTrigger(post.Message) {
+		if err := a.Srv().Store().WelcomeBotReport().SetPending(sender.Id, model.GetMillis()); err == nil {
+			message = i18n.GetUserTranslations(sender.Locale)("app.welcome_bot.report_prompt")
+			// The user is mid-flow, about to type their report -- re-showing the
+			// full menu/prompt right now would just be confusing.
+			repostMenu = false
+		}
 	}
 
 	reply := &model.Post{
@@ -202,5 +259,8 @@ func (a *App) HandleWelcomeBotReply(rctx request.CTX, channel *model.Channel, se
 		return appErr
 	}
 
+	if !repostMenu {
+		return nil
+	}
 	return a.postWelcomeMenu(rctx, channel, bot.UserId)
 }

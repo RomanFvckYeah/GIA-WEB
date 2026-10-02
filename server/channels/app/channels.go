@@ -191,6 +191,25 @@ func NewChannels(s *Server) (*Channels, error) {
 		})
 	}
 
+	{
+		app := New(ServerConnector(ch))
+
+		// Re-check welcome bot discoverability whenever an admin flips either
+		// toggle on from System Console, without needing a server restart (the
+		// startup migration only covers the very first time either is ever
+		// enabled). AddGloballyDiscoverableUser is idempotent, so it's harmless to
+		// call again if it's already set.
+		app.AddConfigListener(func(oldCfg, newCfg *model.Config) {
+			wasEnabled := model.SafeDereference(oldCfg.TeamSettings.EnableWelcomeMessageDM) || model.SafeDereference(oldCfg.TeamSettings.EnableWelcomeBotReports)
+			isEnabled := model.SafeDereference(newCfg.TeamSettings.EnableWelcomeMessageDM) || model.SafeDereference(newCfg.TeamSettings.EnableWelcomeBotReports)
+			if isEnabled && !wasEnabled {
+				if _, appErr := app.getWelcomeBot(request.EmptyContext(s.Log())); appErr != nil {
+					s.Log().Warn("Failed to mark welcome bot discoverable after config change", mlog.Err(appErr))
+				}
+			}
+		})
+	}
+
 	if accessControlServiceInterface != nil {
 		app := New(ServerConnector(ch))
 		ch.AccessControl = accessControlServiceInterface(app)

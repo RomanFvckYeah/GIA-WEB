@@ -5,13 +5,13 @@ import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 import type {Dispatch} from 'redux';
 
-import {answerWelcomeFaq} from 'actions/welcome_faq';
+import {answerWelcomeFaq, submitWelcomeBotReport} from 'actions/welcome_faq';
 
 import WelcomeFaqMenu from './welcome_faq_menu';
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        actions: bindActionCreators({answerWelcomeFaq}, dispatch),
+        actions: bindActionCreators({answerWelcomeFaq, submitWelcomeBotReport}, dispatch),
     };
 }
 

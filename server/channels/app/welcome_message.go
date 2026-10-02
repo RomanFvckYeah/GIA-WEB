@@ -21,12 +21,12 @@ func (a *App) SendWelcomeMessageDM(rctx request.CTX, userID string) *model.AppEr
 	}
 
 	greeting := strings.TrimSpace(*a.Config().TeamSettings.WelcomeMessageDMText)
-	menu := a.welcomeFaqEnabled()
+	menu := len(a.validWelcomeFaqItems()) > 0 || a.welcomeBotReportsEnabled()
 	if greeting == "" && !menu {
 		return nil
 	}
 
-	bot, appErr := a.GetSystemBot(rctx)
+	bot, appErr := a.getWelcomeBot(rctx)
 	if appErr != nil {
 		return appErr
 	}

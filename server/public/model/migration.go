@@ -69,4 +69,5 @@ const (
 	MigrationKeyAddChannelMembersPermissionToTeamAdmin = "add_channel_members_permission_to_team_admin"
 	MigrationKeyAddChannelReadPermissionToTeamAdmin    = "add_channel_read_permission_to_team_admin"
 	MigrationKeyGiaSystemBotProfileImage               = "gia_system_bot_profile_image"
+	MigrationKeyWelcomeBotDiscoverable                 = "gia_welcome_bot_discoverable"
 )

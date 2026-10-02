@@ -107,6 +107,7 @@ type Store interface {
 	GloballyDiscoverableUser() GloballyDiscoverableUserStore
 	PanicButtonOnlyUser() PanicButtonOnlyUserStore
 	OperationalTrackingGroup() OperationalTrackingGroupStore
+	WelcomeBotReport() WelcomeBotReportStore
 }
 
 type RetentionPolicyStore interface {
@@ -1253,6 +1254,15 @@ type OperationalTrackingGroupStore interface {
 	RemoveMember(groupID, userID string) error
 	GetMembers(groupID string) ([]*model.OperationalTrackingGroupMember, error)
 	UpdateName(groupID, name string) error
+}
+
+type WelcomeBotReportStore interface {
+	Save(report *model.WelcomeBotReport) (*model.WelcomeBotReport, error)
+	GetPage(page, perPage int, onlyUnresolved bool) ([]*model.WelcomeBotReport, error)
+	Resolve(reportID, resolvedBy string, resolvedAt int64) error
+	SetPending(userID string, createAt int64) error
+	IsPending(userID string) (bool, error)
+	ClearPending(userID string) error
 }
 
 type DirectMessageExceptionStore interface {

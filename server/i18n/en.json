@@ -9225,6 +9225,30 @@
     "translation": "I didn't quite get that. Pick one of the options below."
   },
   {
+    "id": "app.welcome_bot.report_prompt",
+    "translation": "Sure. Write your report in your next message and I'll pass it along to an administrator."
+  },
+  {
+    "id": "app.welcome_bot.report_submitted",
+    "translation": "Thanks, your report was sent. An administrator will follow up."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.id.app_error",
+    "translation": "Invalid report id."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.user_id.app_error",
+    "translation": "Invalid user id."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.message.app_error",
+    "translation": "Invalid report message."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.create_at.app_error",
+    "translation": "Invalid create at."
+  },
+  {
     "id": "basic_security_check.url.too_long_error",
     "translation": "URL is too long"
   },

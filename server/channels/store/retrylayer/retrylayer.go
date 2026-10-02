@@ -82,6 +82,7 @@ type RetryLayer struct {
 	UserTermsOfServiceStore         store.UserTermsOfServiceStore
 	ViewStore                       store.ViewStore
 	WebhookStore                    store.WebhookStore
+	WelcomeBotReportStore           store.WelcomeBotReportStore
 }
 
 func (s *RetryLayer) AccessControlPolicy() store.AccessControlPolicyStore {
@@ -330,6 +331,10 @@ func (s *RetryLayer) View() store.ViewStore {
 
 func (s *RetryLayer) Webhook() store.WebhookStore {
 	return s.WebhookStore
+}
+
+func (s *RetryLayer) WelcomeBotReport() store.WelcomeBotReportStore {
+	return s.WelcomeBotReportStore
 }
 
 type RetryLayerAccessControlPolicyStore struct {
@@ -639,6 +644,11 @@ type RetryLayerViewStore struct {
 
 type RetryLayerWebhookStore struct {
 	store.WebhookStore
+	Root *RetryLayer
+}
+
+type RetryLayerWelcomeBotReportStore struct {
+	store.WelcomeBotReportStore
 	Root *RetryLayer
 }
 
@@ -18830,6 +18840,132 @@ func (s *RetryLayerWebhookStore) UpdateOutgoing(hook *model.OutgoingWebhook) (*m
 
 }
 
+func (s *RetryLayerWelcomeBotReportStore) ClearPending(userID string) error {
+
+	tries := 0
+	for {
+		err := s.WelcomeBotReportStore.ClearPending(userID)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerWelcomeBotReportStore) GetPage(page int, perPage int, onlyUnresolved bool) ([]*model.WelcomeBotReport, error) {
+
+	tries := 0
+	for {
+		result, err := s.WelcomeBotReportStore.GetPage(page, perPage, onlyUnresolved)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerWelcomeBotReportStore) IsPending(userID string) (bool, error) {
+
+	tries := 0
+	for {
+		result, err := s.WelcomeBotReportStore.IsPending(userID)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerWelcomeBotReportStore) Resolve(reportID string, resolvedBy string, resolvedAt int64) error {
+
+	tries := 0
+	for {
+		err := s.WelcomeBotReportStore.Resolve(reportID, resolvedBy, resolvedAt)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerWelcomeBotReportStore) Save(report *model.WelcomeBotReport) (*model.WelcomeBotReport, error) {
+
+	tries := 0
+	for {
+		result, err := s.WelcomeBotReportStore.Save(report)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerWelcomeBotReportStore) SetPending(userID string, createAt int64) error {
+
+	tries := 0
+	for {
+		err := s.WelcomeBotReportStore.SetPending(userID, createAt)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
 func (s *RetryLayer) Close() {
 	s.Store.Close()
 }
@@ -18929,5 +19065,6 @@ func New(childStore store.Store) *RetryLayer {
 	newStore.UserTermsOfServiceStore = &RetryLayerUserTermsOfServiceStore{UserTermsOfServiceStore: childStore.UserTermsOfService(), Root: &newStore}
 	newStore.ViewStore = &RetryLayerViewStore{ViewStore: childStore.View(), Root: &newStore}
 	newStore.WebhookStore = &RetryLayerWebhookStore{WebhookStore: childStore.Webhook(), Root: &newStore}
+	newStore.WelcomeBotReportStore = &RetryLayerWelcomeBotReportStore{WelcomeBotReportStore: childStore.WelcomeBotReport(), Root: &newStore}
 	return &newStore
 }

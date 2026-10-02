@@ -346,6 +346,7 @@ func Init(srv *app.Server) (*API, error) {
 	api.InitPanicButtonOnlyUsers()
 	api.InitOperationalTrackingGroups()
 	api.InitWelcomeFaq()
+	api.InitWelcomeBotReports()
 	api.InitChannel()
 	api.InitPost()
 	api.InitFile()

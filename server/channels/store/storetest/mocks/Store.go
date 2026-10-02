@@ -1606,6 +1606,26 @@ func (_m *Store) Webhook() store.WebhookStore {
 	return r0
 }
 
+// WelcomeBotReport provides a mock function with no fields
+func (_m *Store) WelcomeBotReport() store.WelcomeBotReportStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for WelcomeBotReport")
+	}
+
+	var r0 store.WelcomeBotReportStore
+	if rf, ok := ret.Get(0).(func() store.WelcomeBotReportStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.WelcomeBotReportStore)
+		}
+	}
+
+	return r0
+}
+
 // NewStore creates a new instance of Store. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewStore(t interface {

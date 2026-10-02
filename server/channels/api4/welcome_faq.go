@@ -10,6 +10,7 @@ import (
 
 func (api *API) InitWelcomeFaq() {
 	api.BaseRoutes.APIRoot.Handle("/welcome_faq/answer", api.APISessionRequired(answerWelcomeFaq)).Methods(http.MethodPost)
+	api.BaseRoutes.APIRoot.Handle("/welcome_faq/report", api.APISessionRequired(submitWelcomeBotReport)).Methods(http.MethodPost)
 }
 
 // answerWelcomeFaq handles a click on a welcome-menu option button: the system
@@ -24,6 +25,25 @@ func answerWelcomeFaq(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.App.AnswerWelcomeFaq(c.AppContext, c.AppContext.Session().UserId, req.OptionID); err != nil {
+		c.Err = err
+		return
+	}
+
+	ReturnStatusOK(w)
+}
+
+// submitWelcomeBotReport handles a user filing a free-text report ("Reportar un
+// problema") from the welcome menu: the system bot saves it and confirms receipt.
+func submitWelcomeBotReport(c *Context, w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		c.SetInvalidParamWithErr("message", err)
+		return
+	}
+
+	if _, err := c.App.CreateWelcomeBotReport(c.AppContext, c.AppContext.Session().UserId, req.Message); err != nil {
 		c.Err = err
 		return
 	}

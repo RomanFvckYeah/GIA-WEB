@@ -1032,6 +1032,42 @@ func (s *Server) doGiaSystemBotProfileImageMigration(rctx request.CTX) error {
 	return nil
 }
 
+// doWelcomeBotDiscoverableMigration marks the System Bot globally discoverable so an
+// EXISTING account (one created before this ran, or that never shares a team with
+// it) can find it in "start a DM" search and message it directly to pull up the
+// welcome menu/report button, regardless of TeamSettings.RestrictDirectMessage.
+// Without this, a brand-new deployment would only pick this up lazily the first
+// time the bot happens to send a message through one of the welcome-bot flows
+// (see App.getWelcomeBot) -- which never happens on its own for an account that has
+// no way to reach the bot in the first place.
+func (s *Server) doWelcomeBotDiscoverableMigration(rctx request.CTX) error {
+	var nfErr *store.ErrNotFound
+	if _, err := s.Store().System().GetByName(model.MigrationKeyWelcomeBotDiscoverable); err == nil {
+		return nil
+	} else if !errors.As(err, &nfErr) {
+		return fmt.Errorf("could not query migration: %w", err)
+	}
+
+	a := New(ServerConnector(s.Channels()))
+
+	if _, appErr := a.getWelcomeBot(rctx); appErr != nil {
+		// Same reasoning as the profile image migration above: no system admin yet
+		// to own the bot, so skip without marking complete and try again next boot.
+		rctx.Logger().Warn("Skipping welcome bot discoverable migration: system bot not available", mlog.Err(appErr))
+		return nil
+	}
+
+	system := model.System{
+		Name:  model.MigrationKeyWelcomeBotDiscoverable,
+		Value: "true",
+	}
+	if err := s.Store().System().SaveOrUpdate(&system); err != nil {
+		return fmt.Errorf("failed to mark welcome bot discoverable migration as completed: %w", err)
+	}
+
+	return nil
+}
+
 func (a *App) DoAppMigrations() {
 	a.Srv().doAppMigrations()
 }
@@ -1080,6 +1116,7 @@ func (s *Server) doAppMigrations() {
 		{"Delete Invalid Dms Preferences Migration", s.doDeleteDmsPreferencesMigration},
 		{"Access Control Policy V0.3 Migration", s.doAccessControlPolicyV0_3Migration},
 		{"GIA System Bot Profile Image Migration", s.doGiaSystemBotProfileImageMigration},
+		{"GIA Welcome Bot Discoverable Migration", s.doWelcomeBotDiscoverableMigration},
 	}
 
 	rctx := request.EmptyContext(s.Log())

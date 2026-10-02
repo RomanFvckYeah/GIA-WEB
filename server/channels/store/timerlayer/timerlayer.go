@@ -81,6 +81,7 @@ type TimerLayer struct {
 	UserTermsOfServiceStore         store.UserTermsOfServiceStore
 	ViewStore                       store.ViewStore
 	WebhookStore                    store.WebhookStore
+	WelcomeBotReportStore           store.WelcomeBotReportStore
 }
 
 func (s *TimerLayer) AccessControlPolicy() store.AccessControlPolicyStore {
@@ -329,6 +330,10 @@ func (s *TimerLayer) View() store.ViewStore {
 
 func (s *TimerLayer) Webhook() store.WebhookStore {
 	return s.WebhookStore
+}
+
+func (s *TimerLayer) WelcomeBotReport() store.WelcomeBotReportStore {
+	return s.WelcomeBotReportStore
 }
 
 type TimerLayerAccessControlPolicyStore struct {
@@ -638,6 +643,11 @@ type TimerLayerViewStore struct {
 
 type TimerLayerWebhookStore struct {
 	store.WebhookStore
+	Root *TimerLayer
+}
+
+type TimerLayerWelcomeBotReportStore struct {
+	store.WelcomeBotReportStore
 	Root *TimerLayer
 }
 
@@ -14883,6 +14893,102 @@ func (s *TimerLayerWebhookStore) UpdateOutgoing(hook *model.OutgoingWebhook) (*m
 	return result, err
 }
 
+func (s *TimerLayerWelcomeBotReportStore) ClearPending(userID string) error {
+	start := time.Now()
+
+	err := s.WelcomeBotReportStore.ClearPending(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.ClearPending", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerWelcomeBotReportStore) GetPage(page int, perPage int, onlyUnresolved bool) ([]*model.WelcomeBotReport, error) {
+	start := time.Now()
+
+	result, err := s.WelcomeBotReportStore.GetPage(page, perPage, onlyUnresolved)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.GetPage", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerWelcomeBotReportStore) IsPending(userID string) (bool, error) {
+	start := time.Now()
+
+	result, err := s.WelcomeBotReportStore.IsPending(userID)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.IsPending", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerWelcomeBotReportStore) Resolve(reportID string, resolvedBy string, resolvedAt int64) error {
+	start := time.Now()
+
+	err := s.WelcomeBotReportStore.Resolve(reportID, resolvedBy, resolvedAt)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.Resolve", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerWelcomeBotReportStore) Save(report *model.WelcomeBotReport) (*model.WelcomeBotReport, error) {
+	start := time.Now()
+
+	result, err := s.WelcomeBotReportStore.Save(report)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.Save", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerWelcomeBotReportStore) SetPending(userID string, createAt int64) error {
+	start := time.Now()
+
+	err := s.WelcomeBotReportStore.SetPending(userID, createAt)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("WelcomeBotReportStore.SetPending", success, elapsed)
+	}
+	return err
+}
+
 func (s *TimerLayer) Close() {
 	s.Store.Close()
 }
@@ -14983,5 +15089,6 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.UserTermsOfServiceStore = &TimerLayerUserTermsOfServiceStore{UserTermsOfServiceStore: childStore.UserTermsOfService(), Root: &newStore}
 	newStore.ViewStore = &TimerLayerViewStore{ViewStore: childStore.View(), Root: &newStore}
 	newStore.WebhookStore = &TimerLayerWebhookStore{WebhookStore: childStore.Webhook(), Root: &newStore}
+	newStore.WelcomeBotReportStore = &TimerLayerWelcomeBotReportStore{WelcomeBotReportStore: childStore.WelcomeBotReport(), Root: &newStore}
 	return &newStore
 }

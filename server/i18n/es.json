@@ -6060,6 +6060,30 @@
     "translation": "No entendí bien. Elige una de las opciones de abajo."
   },
   {
+    "id": "app.welcome_bot.report_prompt",
+    "translation": "Perfecto. Escribe tu reporte en tu siguiente mensaje y se lo paso a un administrador."
+  },
+  {
+    "id": "app.welcome_bot.report_submitted",
+    "translation": "Gracias, tu reporte fue enviado. Un administrador te va a contactar."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.id.app_error",
+    "translation": "Id de reporte inválido."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.user_id.app_error",
+    "translation": "Id de usuario inválido."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.message.app_error",
+    "translation": "Mensaje de reporte inválido."
+  },
+  {
+    "id": "model.welcome_bot_report.is_valid.create_at.app_error",
+    "translation": "Fecha de creación inválida."
+  },
+  {
     "id": "model.config.is_valid.directory.app_error",
     "translation": "Directorio de Almacenamiento Local nulo. Tiene que ser una serie no vacía."
   },

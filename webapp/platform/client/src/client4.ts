@@ -157,6 +157,7 @@ import type {
     UserCustomStatus,
 } from '@mattermost/types/users';
 import type {DeepPartial, PartialExcept, RelationOneToOne} from '@mattermost/types/utilities';
+import type {WelcomeBotReport} from '@mattermost/types/welcome_bot_reports';
 
 import {cleanUrlForLogging} from './errors';
 import {buildQueryString} from './helpers';
@@ -1695,6 +1696,27 @@ export default class Client4 {
         return this.doFetch<StatusOK>(
             `${this.getBaseRoute()}/welcome_faq/answer`,
             {method: 'post', body: JSON.stringify({option_id: optionId})},
+        );
+    };
+
+    submitWelcomeBotReport = (message: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getBaseRoute()}/welcome_faq/report`,
+            {method: 'post', body: JSON.stringify({message})},
+        );
+    };
+
+    getWelcomeBotReports = (page = 0, perPage = 50, unresolvedOnly = false) => {
+        return this.doFetch<WelcomeBotReport[]>(
+            `${this.getBaseRoute()}/welcome_bot_reports${buildQueryString({page, per_page: perPage, unresolved_only: unresolvedOnly || undefined})}`,
+            {method: 'get'},
+        );
+    };
+
+    resolveWelcomeBotReport = (reportId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getBaseRoute()}/welcome_bot_reports/${reportId}/resolve`,
+            {method: 'post'},
         );
     };
 

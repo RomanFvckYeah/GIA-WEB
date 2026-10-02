@@ -2439,6 +2439,7 @@ type TeamSettings struct {
 	WelcomeMessageDMText            *string           `access:"site_customization"` // telemetry: none
 	WelcomeFaqPrompt                *string           `access:"site_customization"` // telemetry: none
 	WelcomeFaqItems                 []*WelcomeFaqItem `access:"site_customization"` // telemetry: none
+	EnableWelcomeBotReports         *bool             `access:"site_customization"`
 	RestrictDirectMessage           *string           `access:"site_users_and_teams"`
 	EnableLastActiveTime            *bool             `access:"site_users_and_teams"`
 	// In seconds.
@@ -2522,6 +2523,10 @@ func (s *TeamSettings) SetDefaults() {
 
 	if s.WelcomeFaqItems == nil {
 		s.WelcomeFaqItems = []*WelcomeFaqItem{}
+	}
+
+	if s.EnableWelcomeBotReports == nil {
+		s.EnableWelcomeBotReports = NewPointer(false)
 	}
 
 	if s.RestrictDirectMessage == nil {

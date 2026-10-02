@@ -14,4 +14,20 @@
         white-space: normal;
         text-align: left;
     }
+
+    &__reportForm {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 480px;
+    }
+
+    &__reportTextarea {
+        resize: vertical;
+    }
+
+    &__reportActions {
+        display: flex;
+        gap: 8px;
+    }
 }
