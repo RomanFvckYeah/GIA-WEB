@@ -42,6 +42,10 @@ services:
     ports:
       # Solo expuesto en localhost — nginx en el host es quien atiende al público en 80/443.
       - "127.0.0.1:8065:8065"
+      # El servidor RTC del plugin Calls (audio/video) no tiene proxy nginx por delante —
+      # tiene que ser alcanzable directo desde internet en ambos protocolos.
+      - "0.0.0.0:8443:8443/tcp"
+      - "0.0.0.0:8443:8443/udp"
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER:-mmuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mattermost}?sslmode=disable&connect_timeout=10"
