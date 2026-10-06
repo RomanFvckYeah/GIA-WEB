@@ -67,10 +67,18 @@ services:
       - mm-plugins:/mattermost/plugins
       - mm-client-plugins:/mattermost/client/plugins
     networks:
-      - gia-web
+      gia-web:
+        # Fija la IP interna del contenedor: el plugin Calls (RTC Server Address) se
+        # configura apuntando directo a esta IP para que no enumere también 127.0.0.1
+        # como candidato ICE — si esto llega a cambiar, hay que actualizar también
+        # System Console > Plugins > Calls con la IP nueva.
+        ipv4_address: 172.20.0.3
 
 networks:
   gia-web:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 volumes:
   mm-plugins:
