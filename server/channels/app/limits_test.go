@@ -17,7 +17,7 @@ import (
 func TestGetServerLimits(t *testing.T) {
 	mainHelper.Parallel(t)
 
-	t.Run("unlicensed server shows hard-coded limits", func(t *testing.T) {
+	t.Run("unlicensed server has no limits (GIA WEB fork)", func(t *testing.T) {
 		th := Setup(t).InitBasic(t)
 
 		th.App.Srv().SetLicense(nil)
@@ -27,8 +27,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// InitBasic creates 3 users by default
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
-		require.Equal(t, int64(200), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(250), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("user counts are skipped when includeUserCounts is false", func(t *testing.T) {
@@ -47,8 +47,8 @@ func TestGetServerLimits(t *testing.T) {
 		require.Nil(t, appErr)
 		require.Equal(t, int64(0), withoutCounts.ActiveUserCount)
 		require.Equal(t, int64(0), withoutCounts.SingleChannelGuestCount)
-		require.Equal(t, int64(200), withoutCounts.MaxUsersLimit)
-		require.Equal(t, int64(250), withoutCounts.MaxUsersHardLimit)
+		require.Equal(t, int64(0), withoutCounts.MaxUsersLimit)
+		require.Equal(t, int64(0), withoutCounts.MaxUsersHardLimit)
 	})
 
 	t.Run("user count should increase on creating new user and decrease on permanently deleting", func(t *testing.T) {
@@ -279,14 +279,14 @@ func TestGetServerLimits(t *testing.T) {
 func TestIsAtUserLimit(t *testing.T) {
 	mainHelper.Parallel(t)
 
-	t.Run("unlicensed server", func(t *testing.T) {
-		t.Run("below hard limit", func(t *testing.T) {
+	t.Run("unlicensed server never hits a limit (GIA WEB fork has no stock hard limit)", func(t *testing.T) {
+		t.Run("small user count", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			th.App.Srv().SetLicense(nil)
 
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(200), nil) // Under hard limit of 250
+			mockUserStore.On("Count", mock.Anything).Return(int64(200), nil)
 			mockUserStore.On("AnalyticsGetSingleChannelGuestCount").Return(int64(0), nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
@@ -296,36 +296,36 @@ func TestIsAtUserLimit(t *testing.T) {
 			require.False(t, atLimit)
 		})
 
-		t.Run("at hard limit", func(t *testing.T) {
+		t.Run("user count well past Mattermost's stock hard limit of 250", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			th.App.Srv().SetLicense(nil)
 
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(250), nil) // At hard limit of 250
+			mockUserStore.On("Count", mock.Anything).Return(int64(1383), nil) // matches real prod user count
 			mockUserStore.On("AnalyticsGetSingleChannelGuestCount").Return(int64(0), nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 
-		t.Run("above hard limit", func(t *testing.T) {
+		t.Run("very large user count", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			th.App.Srv().SetLicense(nil)
 
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(300), nil) // Over hard limit of 250
+			mockUserStore.On("Count", mock.Anything).Return(int64(100000), nil)
 			mockUserStore.On("AnalyticsGetSingleChannelGuestCount").Return(int64(0), nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 	})
 
@@ -539,7 +539,7 @@ func TestExtraUsersBehavior(t *testing.T) {
 		}
 	})
 
-	t.Run("unlicensed server has no extra users", func(t *testing.T) {
+	t.Run("unlicensed server has no limit at all (GIA WEB fork)", func(t *testing.T) {
 		th := Setup(t).InitBasic(t)
 
 		th.App.Srv().SetLicense(nil)
@@ -547,9 +547,8 @@ func TestExtraUsersBehavior(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits(true)
 		require.Nil(t, appErr)
 
-		// Unlicensed servers use hard-coded limits without extra users
-		require.Equal(t, int64(200), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(250), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 }
 

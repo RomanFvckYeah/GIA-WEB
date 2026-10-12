@@ -9,9 +9,14 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
+// Unlimited (0) for this fork: GIA WEB doesn't sell/enforce Mattermost licensing, and the
+// real production deployment already exceeds Mattermost's stock unlicensed caps (1383 active
+// users as of the 2026-10-11 migration, over the stock 250 hard limit). GetServerLimits/
+// isAtUserLimit already treat 0 as "no limit" -- this intentionally opts out of the stock
+// behavior rather than raising the caps to some other arbitrary number.
 const (
-	maxUsersLimit     = 200
-	maxUsersHardLimit = 250
+	maxUsersLimit     = 0
+	maxUsersHardLimit = 0
 )
 
 // GetServerLimits returns the server's seat/post-history limits. The license-derived
