@@ -2476,18 +2476,13 @@ func removeChannelMember(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// A system_admin marks specific (team, user) pairs as genuine organization members of
-	// that team — e.g. to distinguish a client's own staff from central-org staff added to
-	// their team just to provide support. team_admin's manage_{public,private}_channel_members
-	// permission checked above doesn't account for this, so it's enforced separately: a
-	// team_admin may only remove a member they share organization membership with.
-	if c.Params.UserId != c.AppContext.Session().UserId &&
-		!c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) &&
-		(!c.App.IsUserOrgMemberOfTeam(c.AppContext, channel.TeamId, c.Params.UserId) ||
-			!c.App.IsUserOrgMemberOfTeam(c.AppContext, channel.TeamId, c.AppContext.Session().UserId)) {
-		c.Err = model.NewAppError("removeChannelMember", "api.channel.remove_channel_member.not_same_organization.app_error", nil, "", http.StatusForbidden)
-		return
-	}
+	// Channel membership (add and remove alike) is governed purely by the channel-level
+	// manage_{public,private}_channel_members permission checked above -- not gated by
+	// organization membership. That concept exists to rein in team_admin's broader,
+	// team-wide actions (e.g. removing a user from the team entirely, editing their
+	// profile, Operational Tracking group assignment), not ordinary channel membership
+	// management, which anyone with channel-member-management permission (channel_admin,
+	// team_admin or system_admin) can do for any team member regardless of organization.
 
 	if err = c.App.RemoveUserFromChannel(c.AppContext, c.Params.UserId, c.AppContext.Session().UserId, channel); err != nil {
 		c.Err = err

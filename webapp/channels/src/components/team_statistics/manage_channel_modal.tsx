@@ -16,9 +16,7 @@ import {
     updateChannelMemberSchemeRoles,
     updateChannelPrivacy,
 } from 'mattermost-redux/actions/channels';
-import {getTeamOrganizationMembers} from 'mattermost-redux/actions/teams';
 import {getAllChannelStats, getChannel, getChannelMembersInChannels} from 'mattermost-redux/selectors/entities/channels';
-import {getCurrentUserId} from 'mattermost-redux/selectors/entities/common';
 import {makeGetProfilesInChannel, makeSearchProfilesInChannel} from 'mattermost-redux/selectors/entities/users';
 import {isDefault as isDefaultChannel} from 'mattermost-redux/utils/channel_utils';
 
@@ -54,12 +52,10 @@ const ManageChannelModal = ({channel: initialChannel, onExited}: Props) => {
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(0);
     const [term, setTerm] = useState('');
-    const [orgMemberIds, setOrgMemberIds] = useState<Set<string>>(new Set());
 
     const doGetProfilesInChannel = useMemo(() => makeGetProfilesInChannel(), []);
     const doSearchProfilesInChannel = useMemo(() => makeSearchProfilesInChannel(), []);
 
-    const currentUserId = useSelector(getCurrentUserId);
     const channel = useSelector((state: GlobalState) => getChannel(state, initialChannel.id)) ?? initialChannel;
     const memberships = useSelector((state: GlobalState) => getChannelMembersInChannels(state)[channel.id]) ?? EMPTY_MEMBERSHIPS;
     const totalCount = useSelector((state: GlobalState) => getAllChannelStats(state)[channel.id]?.member_count) ?? 0;
@@ -78,14 +74,6 @@ const ManageChannelModal = ({channel: initialChannel, onExited}: Props) => {
         // always empty. Re-fetch the single channel here, which isn't sanitized.
         dispatch(fetchChannel(channel.id));
     }, [dispatch, channel.id]);
-
-    useEffect(() => {
-        dispatch(getTeamOrganizationMembers(channel.team_id)).then((result) => {
-            if ('data' in result && result.data) {
-                setOrgMemberIds(new Set(result.data));
-            }
-        });
-    }, [dispatch, channel.team_id]);
 
     useEffect(() => {
         setPage(0);
@@ -182,27 +170,18 @@ const ManageChannelModal = ({channel: initialChannel, onExited}: Props) => {
         defaultMessage: 'This is the team\'s default channel: it cannot be converted to private, and members (other than guests) cannot be removed from it.',
     });
 
-    const notSameOrganizationHint = formatMessage({
-        id: 'team_statistics.channels.manage.notSameOrganizationHint',
-        defaultMessage: 'This user does not share organization membership with you in this team and cannot be removed.',
-    });
-
     const rows: Row[] = pagedMembers.map((user) => {
         const membership = memberships[user.id];
 
         // The server permanently blocks removing non-guest members from the default
         // channel (server/channels/app/channel.go, removeUserFromChannel) regardless of
-        // the caller's permissions — guests are the one exception.
+        // the caller's permissions — guests are the one exception. Channel membership
+        // (unlike team removal, profile edits, or Operational Tracking) is not gated by
+        // organization membership — see the matching server-side removeChannelMember change.
         const isDefaultBlocked = isDefault && !user.roles.includes('guest');
-        const isSameOrganization = orgMemberIds.has(user.id) && orgMemberIds.has(currentUserId);
-        const canRemove = !isDefaultBlocked && isSameOrganization;
+        const canRemove = !isDefaultBlocked;
 
-        let removeHint: string | undefined;
-        if (isDefaultBlocked) {
-            removeHint = defaultChannelHint;
-        } else if (!isSameOrganization) {
-            removeHint = notSameOrganizationHint;
-        }
+        const removeHint = isDefaultBlocked ? defaultChannelHint : undefined;
 
         return {
             cells: {
