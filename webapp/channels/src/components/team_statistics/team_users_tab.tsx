@@ -10,11 +10,11 @@ import type {UserProfile} from '@mattermost/types/users';
 
 import {getPanicButtonOnlyUsers} from 'mattermost-redux/actions/panic_button_only_users';
 import {getTeamOrganizationMembers} from 'mattermost-redux/actions/teams';
-import {getStatusesByIds, getProfilesByIds} from 'mattermost-redux/actions/users';
+import {getStatusesByIds, getProfilesByIds, getProfilesInTeam} from 'mattermost-redux/actions/users';
 import {getCurrentTeamId, getMembersInCurrentTeam} from 'mattermost-redux/selectors/entities/teams';
-import {getUsers, getProfilesInCurrentTeam} from 'mattermost-redux/selectors/entities/users';
+import {getUsers} from 'mattermost-redux/selectors/entities/users';
 
-import {loadProfilesAndTeamMembers} from 'actions/user_actions';
+import {loadTeamMembersForProfilesList} from 'actions/user_actions';
 
 import type {Column, Row} from 'components/admin_console/data_grid/data_grid';
 import DataGrid from 'components/admin_console/data_grid/data_grid';
@@ -49,9 +49,18 @@ const TeamUsersTab = () => {
     const dispatch = useDispatch();
 
     const currentTeamId = useSelector(getCurrentTeamId);
-    const users = useSelector(getProfilesInCurrentTeam);
     const teamMembers = useSelector(getMembersInCurrentTeam) ?? EMPTY_MEMBERSHIPS;
     const allUsersById = useSelector(getUsers);
+
+    // Fetched directly into local state rather than read via the getProfilesInCurrentTeam
+    // selector -- that selector draws from state.entities.users.profilesInTeam, an
+    // ever-growing per-team ID set that redux only ever MERGES into, never prunes. A user
+    // removed from this team (or loaded here once from some other part of the app) stays in
+    // that set forever in this browser session, so the selector can show someone who no
+    // longer has any membership in this team at all. Keeping our own fetch result as the
+    // single source of truth avoids that cross-team leak entirely. Same fix already applied
+    // to channel counts in team_overview_tab.tsx and team_channels_tab.tsx.
+    const [users, setUsers] = useState<UserProfile[]>([]);
 
     const [page, setPage] = useState(0);
     const [term, setTerm] = useState('');
@@ -79,12 +88,45 @@ const TeamUsersTab = () => {
 
     useEffect(() => {
         if (!currentTeamId) {
-            return;
+            return undefined;
         }
+
+        // A single MAX_USERS_LOADED-sized request silently truncated teams with more
+        // than 200 active members (no error, no indication -- the grid's own "total"
+        // just quietly became 200 instead of the real count). Looping fetches every
+        // page until the server returns a short page, so this works for teams of any size.
+        let cancelled = false;
         setLoading(true);
-        dispatch(loadProfilesAndTeamMembers(0, MAX_USERS_LOADED, currentTeamId, {active: true})).finally(() => {
-            setLoading(false);
+
+        (async () => {
+            let page = 0;
+            let allUsers: UserProfile[] = [];
+            for (;;) {
+                // eslint-disable-next-line no-await-in-loop
+                const result = await dispatch(getProfilesInTeam(currentTeamId, page, MAX_USERS_LOADED, '', {active: true}));
+                if (!('data' in result) || !result.data) {
+                    break;
+                }
+                allUsers = allUsers.concat(result.data);
+                // eslint-disable-next-line no-await-in-loop
+                dispatch(loadTeamMembersForProfilesList(result.data, currentTeamId));
+                if (result.data.length < MAX_USERS_LOADED) {
+                    break;
+                }
+                page += 1;
+            }
+            if (!cancelled) {
+                setUsers(allUsers);
+            }
+        })().finally(() => {
+            if (!cancelled) {
+                setLoading(false);
+            }
         });
+
+        return () => {
+            cancelled = true;
+        };
     }, [dispatch, currentTeamId, refreshKey]);
 
     useEffect(() => {
@@ -127,7 +169,7 @@ const TeamUsersTab = () => {
     const orgOnlyUsers = useMemo(() => {
         return orgOnlyIds.
             map((id) => allUsersById[id]).
-            filter((user): user is UserProfile => Boolean(user)).
+            filter((user): user is UserProfile => Boolean(user) && user.delete_at === 0).
             sort((a, b) => a.username.localeCompare(b.username));
     }, [orgOnlyIds, allUsersById]);
 
@@ -141,8 +183,15 @@ const TeamUsersTab = () => {
 
     // A panic-button-only user is excluded here even if a stale cache entry still claims they're
     // a real team member (see panicOnlyIds above) — this list is never their real home.
+    //
+    // delete_at !== 0 is filtered client-side rather than trusting the active:true fetch above:
+    // profilesInTeam in the redux store is an ever-growing set (merged, never pruned), so a
+    // deactivated user loaded into it by ANY earlier action this session -- e.g. opening the
+    // native System Console's own user list, which doesn't filter by active -- keeps showing up
+    // here regardless of this tab's own active-only fetch. Same staleness pattern as the channel
+    // counts fixed earlier in team_overview_tab.tsx.
     const realTeamUsers = useMemo(() => {
-        return users.filter((user) => !panicOnlyIds.has(user.id));
+        return users.filter((user) => !panicOnlyIds.has(user.id) && user.delete_at === 0);
     }, [users, panicOnlyIds]);
 
     const filteredUsers = useMemo(() => {

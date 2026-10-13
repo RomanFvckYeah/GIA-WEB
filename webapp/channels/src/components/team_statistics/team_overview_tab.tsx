@@ -5,13 +5,14 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {FormattedDate, useIntl} from 'react-intl';
 import {useDispatch, useSelector} from 'react-redux';
 
+import type {ChannelWithTeamData} from '@mattermost/types/channels';
 import type {UserProfile} from '@mattermost/types/users';
 
 import {getPostsPerDayAnalytics, getUsersPerDayAnalytics} from 'mattermost-redux/actions/admin';
+import {searchAllChannels} from 'mattermost-redux/actions/channels';
 import {getTeamStats} from 'mattermost-redux/actions/teams';
 import {getProfilesInTeam} from 'mattermost-redux/actions/users';
 import {General} from 'mattermost-redux/constants';
-import {getChannelsInCurrentTeam} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentTeamId, getCurrentTeamStats} from 'mattermost-redux/selectors/entities/teams';
 
 import {getCurrentLocale} from 'selectors/i18n';
@@ -67,12 +68,12 @@ const TeamOverviewTab = () => {
 
     const currentTeamId = useSelector(getCurrentTeamId);
     const stats = useSelector(getCurrentTeamStats);
-    const channels = useSelector(getChannelsInCurrentTeam);
     const teamAnalytics = useSelector((state: GlobalState) => state.entities.admin.teamAnalytics[currentTeamId]);
     const locale = useSelector(getCurrentLocale);
 
     const [recentlyActiveUsers, setRecentlyActiveUsers] = useState<UserProfile[]>([]);
     const [newUsers, setNewUsers] = useState<UserProfile[]>([]);
+    const [channels, setChannels] = useState<ChannelWithTeamData[]>([]);
 
     useEffect(() => {
         if (!currentTeamId) {
@@ -91,6 +92,18 @@ const TeamOverviewTab = () => {
         dispatch(getProfilesInTeam(currentTeamId, 0, General.PROFILE_CHUNK_SIZE, 'create_at')).then((result) => {
             if ('data' in result && result.data) {
                 setNewUsers(result.data);
+            }
+        });
+
+        // Same authoritative, team-scoped fetch the Channels tab uses -- the redux
+        // channelsInCurrentTeam selector only reflects channels this admin has already
+        // loaded through ordinary navigation (RECEIVED_CHANNEL/RECEIVED_CHANNELS), so it
+        // silently undercounts, especially for a system_admin who isn't a member of this
+        // team. searchAllChannels hits the server directly and includes private channels
+        // the viewer hasn't joined (server-enforced for team_admin/system_admin of this team).
+        dispatch(searchAllChannels('', {team_ids: [currentTeamId]})).then((result) => {
+            if ('data' in result && Array.isArray(result.data)) {
+                setChannels(result.data);
             }
         });
     }, [dispatch, currentTeamId]);
@@ -128,14 +141,8 @@ const TeamOverviewTab = () => {
         <>
             <div className='grid-statistics'>
                 <StatisticCount
-                    id='totalMembers'
-                    icon='fa-users'
-                    title={formatMessage({id: 'team_statistics.totalMembers', defaultMessage: 'Total members'})}
-                    count={stats?.total_member_count}
-                />
-                <StatisticCount
                     id='activeMembers'
-                    icon='fa-user'
+                    icon='fa-users'
                     title={formatMessage({id: 'team_statistics.activeMembers', defaultMessage: 'Active members'})}
                     count={stats?.active_member_count}
                 />
