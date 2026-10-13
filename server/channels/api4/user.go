@@ -1472,13 +1472,32 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyBytes, ioErr := io.ReadAll(r.Body)
+	if ioErr != nil {
+		c.SetInvalidParamWithErr("user", ioErr)
+		return
+	}
+
 	var patch model.UserPatch
-	if jsonErr := json.NewDecoder(r.Body).Decode(&patch); jsonErr != nil {
+	if jsonErr := json.Unmarshal(bodyBytes, &patch); jsonErr != nil {
 		c.SetInvalidParamWithErr("user", jsonErr)
 		return
 	}
 
 	patch.RemoteId = nil
+
+	// Optional, this fork's own field (same double-decode pattern as team_create_member.go):
+	// whether the target user is emailed about this edit. Defaults to true (unchanged
+	// behavior) for anything that doesn't send it -- mobile app, third-party integrations,
+	// etc. The native System Console explicitly sends false; this fork's team_statistics
+	// panel leaves it unset.
+	notifyTarget := true
+	var extra struct {
+		NotifyTarget *bool `json:"notify_target"`
+	}
+	if jsonErr := json.Unmarshal(bodyBytes, &extra); jsonErr == nil && extra.NotifyTarget != nil {
+		notifyTarget = *extra.NotifyTarget
+	}
 
 	auditRec := c.MakeAuditRecord(model.AuditEventPatchUser, model.AuditStatusFail)
 	model.AddEventParameterAuditableToAuditRec(auditRec, "user_patch", &patch)
@@ -1543,7 +1562,7 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ruser, err := c.App.PatchUser(c.AppContext, c.Params.UserId, &patch, c.IsSystemAdmin())
+	ruser, err := c.App.PatchUser(c.AppContext, c.Params.UserId, &patch, c.IsSystemAdmin(), notifyTarget)
 	if err != nil {
 		c.Err = err
 		return
@@ -1940,7 +1959,11 @@ func updatePassword(c *Context, w http.ResponseWriter, r *http.Request) {
 
 			err = c.App.UpdatePasswordAsUser(c.AppContext, c.Params.UserId, currentPassword, newPassword)
 		} else if canUpdatePassword {
-			err = c.App.UpdatePasswordByUserIdSendEmail(c.AppContext, c.Params.UserId, newPassword, c.AppContext.T("api.user.reset_password.method"))
+			// notify_target: see the matching comment on patchUser -- defaults to true
+			// (unchanged behavior) for any caller that doesn't send it; the native System
+			// Console explicitly sends "false".
+			notifyTarget := props["notify_target"] != "false"
+			err = c.App.UpdatePasswordByUserIdSendEmail(c.AppContext, c.Params.UserId, newPassword, c.AppContext.T("api.user.reset_password.method"), notifyTarget)
 		} else {
 			err = model.NewAppError("updatePassword", "api.user.update_password.context.app_error", nil, "", http.StatusForbidden)
 		}

@@ -1295,7 +1295,10 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                     updatedUser.password = this.state.confirmPassword;
                 }
 
-                promises.push(this.props.patchUser(updatedUser));
+                // notifyTarget=false: edits from System Console never email the target user,
+                // regardless of who's acting -- unlike the team_statistics panel, which keeps
+                // the default (notify) behavior. See server/channels/api4/user.go's patchUser.
+                promises.push(this.props.patchUser(updatedUser, false));
             }
 
             // Update auth_data if changed
@@ -1422,7 +1425,10 @@ export class SystemUserDetail extends PureComponent<Props, State> {
         this.props.openModal({
             modalId: ModalIdentifiers.RESET_PASSWORD_MODAL,
             dialogType: ResetPasswordModal,
-            dialogProps: {user: this.state.user},
+
+            // notifyTarget=false: System Console edits never email the target user. See
+            // the matching comment on system_user_detail.tsx's patchUser call above.
+            dialogProps: {user: this.state.user, notifyTarget: false},
         });
     };
 

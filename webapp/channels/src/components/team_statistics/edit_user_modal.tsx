@@ -273,8 +273,12 @@ const EditUserModal = ({user, isTargetTeamAdmin: targetHasTeamAdminRole, onExite
                 // self-service "confirm your current password" flow.
                 currentUserId: '',
                 passwordConfig,
+
+                // notifyTarget intentionally left unset here -- defaults to true in
+                // ResetPasswordModal, so edits from this panel keep emailing the target
+                // user, unlike the native System Console (see system_user_detail.tsx).
                 actions: {
-                    updateUserPassword: (userId: string, currentPassword: string, password: string) => dispatch(updateUserPassword(userId, currentPassword, password)),
+                    updateUserPassword: (userId: string, currentPassword: string, password: string, notifyTarget?: boolean) => dispatch(updateUserPassword(userId, currentPassword, password, notifyTarget)),
                 },
             },
         }));

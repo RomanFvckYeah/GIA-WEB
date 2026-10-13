@@ -1101,7 +1101,7 @@ func (a *App) UpdatePasswordAsUser(rctx request.CTX, userID, currentPassword, ne
 
 	T := i18n.GetUserTranslations(user.Locale)
 
-	return a.UpdatePasswordSendEmail(rctx, user, newPassword, T("api.user.update_password.menu"))
+	return a.UpdatePasswordSendEmail(rctx, user, newPassword, T("api.user.update_password.menu"), true)
 }
 
 func (a *App) userDeactivated(rctx request.CTX, userID string) *model.AppError {
@@ -1353,7 +1353,7 @@ func (a *App) CheckProviderAttributes(rctx request.CTX, user *model.User, patch 
 	return conflictField
 }
 
-func (a *App) PatchUser(rctx request.CTX, userID string, patch *model.UserPatch, asAdmin bool) (*model.User, *model.AppError) {
+func (a *App) PatchUser(rctx request.CTX, userID string, patch *model.UserPatch, asAdmin bool, sendNotifications bool) (*model.User, *model.AppError) {
 	user, err := a.GetUser(userID)
 	if err != nil {
 		return nil, err
@@ -1361,7 +1361,7 @@ func (a *App) PatchUser(rctx request.CTX, userID string, patch *model.UserPatch,
 
 	user.Patch(patch)
 
-	updatedUser, err := a.UpdateUser(rctx, user, true)
+	updatedUser, err := a.UpdateUser(rctx, user, sendNotifications)
 	if err != nil {
 		return nil, err
 	}
@@ -1626,13 +1626,13 @@ func (a *App) UpdateMfa(rctx request.CTX, activate bool, userID, token string) *
 	return nil
 }
 
-func (a *App) UpdatePasswordByUserIdSendEmail(rctx request.CTX, userID, newPassword, method string) *model.AppError {
+func (a *App) UpdatePasswordByUserIdSendEmail(rctx request.CTX, userID, newPassword, method string, sendNotification bool) *model.AppError {
 	user, err := a.GetUser(userID)
 	if err != nil {
 		return err
 	}
 
-	return a.UpdatePasswordSendEmail(rctx, user, newPassword, method)
+	return a.UpdatePasswordSendEmail(rctx, user, newPassword, method, sendNotification)
 }
 
 func (a *App) UpdatePassword(rctx request.CTX, user *model.User, newPassword string) *model.AppError {
@@ -1689,16 +1689,18 @@ func (a *App) UpdatePassword(rctx request.CTX, user *model.User, newPassword str
 	return nil
 }
 
-func (a *App) UpdatePasswordSendEmail(rctx request.CTX, user *model.User, newPassword, method string) *model.AppError {
+func (a *App) UpdatePasswordSendEmail(rctx request.CTX, user *model.User, newPassword, method string, sendNotification bool) *model.AppError {
 	if err := a.UpdatePassword(rctx, user, newPassword); err != nil {
 		return err
 	}
 
-	a.Srv().Go(func() {
-		if err := a.Srv().EmailService.SendPasswordChangeEmail(user.Email, method, user.Locale, a.GetSiteURL()); err != nil {
-			rctx.Logger().Error("Failed to send password change email", mlog.Err(err))
-		}
-	})
+	if sendNotification {
+		a.Srv().Go(func() {
+			if err := a.Srv().EmailService.SendPasswordChangeEmail(user.Email, method, user.Locale, a.GetSiteURL()); err != nil {
+				rctx.Logger().Error("Failed to send password change email", mlog.Err(err))
+			}
+		})
+	}
 
 	return nil
 }
@@ -1777,7 +1779,7 @@ func (a *App) resetPasswordFromToken(rctx request.CTX, userSuppliedTokenString, 
 
 	T := i18n.GetUserTranslations(user.Locale)
 
-	if err := a.UpdatePasswordSendEmail(rctx, user, newPassword, T("api.user.reset_password.method")); err != nil {
+	if err := a.UpdatePasswordSendEmail(rctx, user, newPassword, T("api.user.reset_password.method"), true); err != nil {
 		return err
 	}
 

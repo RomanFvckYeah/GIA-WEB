@@ -1002,11 +1002,11 @@ export function saveCustomProfileAttribute(userID: string, attributeID: string, 
     };
 }
 
-export function patchUser(user: UserProfile): ActionFuncAsync<UserProfile> {
+export function patchUser(user: UserProfile, notifyTarget = true): ActionFuncAsync<UserProfile> {
     return async (dispatch) => {
         let data: UserProfile;
         try {
-            data = await Client4.patchUser(user);
+            data = await Client4.patchUser(user, notifyTarget);
         } catch (error) {
             dispatch(logError(error));
             return {error};
@@ -1072,10 +1072,10 @@ export function updateUserMfa(userId: string, activate: boolean, code = ''): Act
     };
 }
 
-export function updateUserPassword(userId: string, currentPassword: string, newPassword: string): ActionFuncAsync {
+export function updateUserPassword(userId: string, currentPassword: string, newPassword: string, notifyTarget = true): ActionFuncAsync {
     return async (dispatch, getState) => {
         try {
-            await Client4.updateUserPassword(userId, currentPassword, newPassword);
+            await Client4.updateUserPassword(userId, currentPassword, newPassword, notifyTarget);
         } catch (error) {
             dispatch(logError(error));
             return {error};

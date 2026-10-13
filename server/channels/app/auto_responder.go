@@ -111,7 +111,9 @@ func (a *App) DisableAutoResponder(rctx request.CTX, userID string, asAdmin bool
 		patch.NotifyProps = user.NotifyProps
 		patch.NotifyProps[model.AutoResponderActiveNotifyProp] = "false"
 
-		_, err := a.PatchUser(rctx, userID, patch, asAdmin)
+		// This patch only ever touches NotifyProps, never email/username, so
+		// sendNotifications has no observable effect here either way.
+		_, err := a.PatchUser(rctx, userID, patch, asAdmin, true)
 		if err != nil {
 			return err
 		}

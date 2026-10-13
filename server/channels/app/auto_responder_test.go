@@ -30,7 +30,7 @@ func TestSetAutoResponderStatus(t *testing.T) {
 	patch.NotifyProps["auto_responder_active"] = "true"
 	patch.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	userUpdated1, _ := th.App.PatchUser(th.Context, user.Id, patch, true)
+	userUpdated1, _ := th.App.PatchUser(th.Context, user.Id, patch, true, true)
 
 	// autoResponder is enabled, status should be OOO
 	th.App.SetAutoResponderStatus(th.Context, userUpdated1, user.NotifyProps)
@@ -44,7 +44,7 @@ func TestSetAutoResponderStatus(t *testing.T) {
 	patch2.NotifyProps["auto_responder_active"] = "false"
 	patch2.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	userUpdated2, _ := th.App.PatchUser(th.Context, user.Id, patch2, true)
+	userUpdated2, _ := th.App.PatchUser(th.Context, user.Id, patch2, true, true)
 
 	// autoResponder is disabled, status should be ONLINE
 	th.App.SetAutoResponderStatus(th.Context, userUpdated2, userUpdated1.NotifyProps)
@@ -71,7 +71,7 @@ func TestDisableAutoResponder(t *testing.T) {
 	patch.NotifyProps["auto_responder_active"] = "true"
 	patch.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	user, appErr := th.App.PatchUser(th.Context, user.Id, patch, true)
+	user, appErr := th.App.PatchUser(th.Context, user.Id, patch, true, true)
 	require.Nil(t, appErr)
 
 	err := th.App.DisableAutoResponder(th.Context, user.Id, true)
@@ -102,7 +102,7 @@ func TestSendAutoResponseIfNecessary(t *testing.T) {
 				"auto_responder_message": "Hello, I'm unavailable today.",
 			},
 		}
-		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true)
+		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true, true)
 		require.Nil(t, err)
 
 		channel := th.CreateDmChannel(t, receiver)
@@ -132,7 +132,7 @@ func TestSendAutoResponseIfNecessary(t *testing.T) {
 				"auto_responder_message": "Hello, I'm unavailable today.",
 			},
 		}
-		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true)
+		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true, true)
 		require.Nil(t, err)
 
 		channel := th.CreateDmChannel(t, receiver)
@@ -179,7 +179,7 @@ func TestSendAutoResponseIfNecessary(t *testing.T) {
 				"auto_responder_message": "Hello, I'm unavailable today.",
 			},
 		}
-		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true)
+		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true, true)
 		require.Nil(t, err)
 
 		channel := th.CreateDmChannel(t, receiver)
@@ -219,7 +219,7 @@ func TestSendAutoResponseIfNecessary(t *testing.T) {
 				"auto_responder_message": "Hello, I'm unavailable today.",
 			},
 		}
-		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true)
+		receiver, err := th.App.PatchUser(th.Context, receiver.Id, patch, true, true)
 		require.Nil(t, err)
 
 		channel := th.CreateDmChannel(t, receiver)
@@ -263,7 +263,7 @@ func TestSendAutoResponseSuccess(t *testing.T) {
 	patch.NotifyProps["auto_responder_active"] = "true"
 	patch.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true)
+	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true, true)
 	require.Nil(t, err)
 
 	savedPost, _, _ := th.App.CreatePost(th.Context, &model.Post{
@@ -307,7 +307,7 @@ func TestSendAutoResponseSuccessOnThread(t *testing.T) {
 	patch.NotifyProps["auto_responder_active"] = "true"
 	patch.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true)
+	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true, true)
 	require.Nil(t, err)
 
 	parentPost, _, _ := th.App.CreatePost(th.Context, &model.Post{
@@ -360,7 +360,7 @@ func TestSendAutoResponseFailure(t *testing.T) {
 	patch.NotifyProps["auto_responder_active"] = "false"
 	patch.NotifyProps["auto_responder_message"] = "Hello, I'm unavailable today."
 
-	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true)
+	userUpdated1, err := th.App.PatchUser(th.Context, user.Id, patch, true, true)
 	require.Nil(t, err)
 
 	savedPost, _, _ := th.App.CreatePost(th.Context, &model.Post{

@@ -2388,7 +2388,7 @@ func TestPatchUser(t *testing.T) {
 	t.Run("Patch with a username already exists", func(t *testing.T) {
 		_, err := th.App.PatchUser(th.Context, testUser.Id, &model.UserPatch{
 			Username: model.NewPointer(th.BasicUser.Username),
-		}, true)
+		}, true, true)
 
 		require.NotNil(t, err)
 		require.Equal(t, "app.user.save.username_exists.app_error", err.Id)
@@ -2397,7 +2397,7 @@ func TestPatchUser(t *testing.T) {
 	t.Run("Patch with a email already exists", func(t *testing.T) {
 		_, err := th.App.PatchUser(th.Context, testUser.Id, &model.UserPatch{
 			Email: model.NewPointer(th.BasicUser.Email),
-		}, true)
+		}, true, true)
 
 		require.NotNil(t, err)
 		require.Equal(t, "app.user.save.email_exists.app_error", err.Id)
@@ -2406,7 +2406,7 @@ func TestPatchUser(t *testing.T) {
 	t.Run("Patch username with a new username", func(t *testing.T) {
 		u, err := th.App.PatchUser(th.Context, testUser.Id, &model.UserPatch{
 			Username: model.NewPointer(model.NewUsername()),
-		}, true)
+		}, true, true)
 
 		require.Nil(t, err)
 		require.Empty(t, u.Password)

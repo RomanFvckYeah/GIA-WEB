@@ -30,8 +30,13 @@ export type Props = {
     onSuccess?: () => void;
     onExited: () => void;
     passwordConfig: PasswordConfig;
+
+    // Whether the target user is emailed about this change -- defaults to true (the
+    // long-standing behavior). The native System Console passes false here; team_statistics
+    // (this fork's bespoke team_admin panel) leaves it unset, keeping the notification.
+    notifyTarget?: boolean;
     actions: {
-        updateUserPassword: (userId: string, currentPassword: string, password: string) => Promise<ActionResult>;
+        updateUserPassword: (userId: string, currentPassword: string, password: string, notifyTarget?: boolean) => Promise<ActionResult>;
     };
 }
 
@@ -41,6 +46,7 @@ export default function ResetPasswordModal({
     onSuccess,
     onExited,
     passwordConfig,
+    notifyTarget = true,
     actions,
 }: Props) {
     const {formatMessage} = useIntl();
@@ -89,6 +95,7 @@ export default function ResetPasswordModal({
             user.id,
             isResettingOwnPassword ? currentPassword : '',
             newPassword,
+            notifyTarget,
         );
 
         if ('error' in result) {
@@ -98,7 +105,7 @@ export default function ResetPasswordModal({
 
         onSuccess?.();
         setShow(false);
-    }, [user, isResettingOwnPassword, currentPassword, newPassword, passwordConfig, actions, onSuccess, formatMessage]);
+    }, [user, isResettingOwnPassword, currentPassword, newPassword, passwordConfig, actions, onSuccess, formatMessage, notifyTarget]);
 
     if (!user) {
         return null;

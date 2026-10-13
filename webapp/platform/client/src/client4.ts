@@ -664,10 +664,14 @@ export default class Client4 {
         );
     };
 
-    patchUser = (userPatch: PartialExcept<UserProfile, 'id'>) => {
+    // notifyTarget defaults to true (unchanged behavior everywhere this isn't explicitly
+    // set to false) -- only the native System Console user-edit screen opts out, so a
+    // system_admin editing someone via team_statistics still notifies them, matching
+    // which PANEL was used rather than who the actor is.
+    patchUser = (userPatch: PartialExcept<UserProfile, 'id'>, notifyTarget = true) => {
         return this.doFetch<UserProfile>(
             `${this.getUserRoute(userPatch.id)}/patch`,
-            {method: 'put', body: JSON.stringify(userPatch)},
+            {method: 'put', body: JSON.stringify({...userPatch, notify_target: notifyTarget})},
         );
     };
 
@@ -721,10 +725,12 @@ export default class Client4 {
         );
     };
 
-    updateUserPassword = (userId: string, currentPassword: string, newPassword: string) => {
+    // notifyTarget: see the comment on patchUser above -- same "which panel, not which
+    // role" rule applies here.
+    updateUserPassword = (userId: string, currentPassword: string, newPassword: string, notifyTarget = true) => {
         return this.doFetch<StatusOK>(
             `${this.getUserRoute(userId)}/password`,
-            {method: 'put', body: JSON.stringify({current_password: currentPassword, new_password: newPassword})},
+            {method: 'put', body: JSON.stringify({current_password: currentPassword, new_password: newPassword, notify_target: notifyTarget})},
         );
     };
 

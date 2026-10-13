@@ -2821,13 +2821,13 @@ func TestReplyPostNotificationsWithCRT(t *testing.T) {
 		oldValue := th.BasicUser2.NotifyProps[model.CommentsNotifyProp]
 		newNotifyProps := th.BasicUser2.NotifyProps
 		newNotifyProps[model.CommentsNotifyProp] = model.CommentsNotifyAny
-		u2, appErr := th.App.PatchUser(th.Context, th.BasicUser2.Id, &model.UserPatch{NotifyProps: newNotifyProps}, false)
+		u2, appErr := th.App.PatchUser(th.Context, th.BasicUser2.Id, &model.UserPatch{NotifyProps: newNotifyProps}, false, true)
 		require.Nil(t, appErr)
 		require.Equal(t, model.CommentsNotifyAny, u2.NotifyProps[model.CommentsNotifyProp])
 		defer func() {
 			newNotifyProps := th.BasicUser2.NotifyProps
 			newNotifyProps[model.CommentsNotifyProp] = oldValue
-			_, nAppErr := th.App.PatchUser(th.Context, th.BasicUser2.Id, &model.UserPatch{NotifyProps: newNotifyProps}, false)
+			_, nAppErr := th.App.PatchUser(th.Context, th.BasicUser2.Id, &model.UserPatch{NotifyProps: newNotifyProps}, false, true)
 			require.Nil(t, nAppErr)
 		}()
 
