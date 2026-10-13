@@ -60,6 +60,13 @@ services:
       MM_EMAILSETTINGS_SMTPUSERNAME: ${SMTP_USERNAME}
       MM_EMAILSETTINGS_SMTPPASSWORD: ${SMTP_PASSWORD}
       MM_EMAILSETTINGS_CONNECTIONSECURITY: "TLS"
+      # Este fork no tiene licencia paga de Mattermost (decisión intencional). El plugin de
+      # Calls, por defecto, bloquea llamadas de más de 2 participantes (canales/grupos) en
+      # servidores sin licencia -- solo deja llamadas 1 a 1 por DM. Esta variable es un
+      # escape hatch oficial del propio plugin (no un hack) para habilitar llamadas de grupo
+      # en instalaciones self-hosted sin licencia. Ver server/enterprise/license.go en
+      # mattermost-plugin-calls, función GroupCallsAllowed().
+      MM_CALLS_GROUP_CALLS_ALLOWED: "true"
     volumes:
       - ./volumes/config:/mattermost/config
       - ./volumes/data:/mattermost/data
