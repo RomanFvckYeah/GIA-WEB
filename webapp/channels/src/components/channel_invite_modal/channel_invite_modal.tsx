@@ -179,7 +179,19 @@ const ChannelInviteModalComponent = (props: Props) => {
         let dmUsers: UserProfileValue[] = [];
         if (!props.channel.policy_enforced) {
             const filteredDmUsers = filterProfilesStartingWithTerm(props.profilesFromRecentDMs, term);
-            dmUsers = filterOutDeletedAndExcludedAndNotInTeamUsers(filteredDmUsers, excludedAndNotInTeamUserIds).slice(0, USERS_FROM_DMS) as UserProfileValue[];
+            dmUsers = filterOutDeletedAndExcludedAndNotInTeamUsers(filteredDmUsers, excludedAndNotInTeamUserIds).
+
+                // excludedAndNotInTeamUserIds only catches someone ALREADY cached client-side as
+                // "not in this team" (profilesNotInCurrentTeam) -- a sparse, incidentally-filled
+                // set, not an authoritative one. That's normally harmless in stock Mattermost,
+                // where you can't have a recent DM with someone outside your team at all. This
+                // fork added cross-team DM exceptions and globally-discoverable users, so recent
+                // DMs can now legitimately include people from other teams -- requiring a
+                // confirmed, positive membersInTeam match here (rather than only a negative
+                // not-in-team check) stops them from being offered as addable to a channel whose
+                // team they don't actually belong to.
+                filter((user) => Boolean(props.membersInTeam?.[user.id])).
+                slice(0, USERS_FROM_DMS) as UserProfileValue[];
         }
 
         let users: UserProfileValue[];
@@ -219,6 +231,7 @@ const ChannelInviteModalComponent = (props: Props) => {
         props.includeUsers,
         props.groups,
         props.channel.policy_enforced,
+        props.membersInTeam,
         excludedUsers,
         filterOutDeletedAndExcludedAndNotInTeamUsers,
         abacFilteredUsers,
@@ -504,6 +517,7 @@ const ChannelInviteModalComponent = (props: Props) => {
         props.includeUsers,
         props.groups,
         props.profilesNotInCurrentTeam,
+        props.membersInTeam,
         props.excludeUsers,
         props.channel.policy_enforced, // Add this to trigger recomputation when ABAC mode changes
         abacFilteredUsers, // Add local ABAC state
